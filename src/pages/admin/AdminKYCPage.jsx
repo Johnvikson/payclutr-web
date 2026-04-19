@@ -108,13 +108,18 @@ export default function AdminKYCPage() {
             </div>
 
             {/* BVN/NIN type badge */}
-            <span className="bg-indigo-100 text-indigo-700 text-xs font-medium px-2.5 py-1 rounded-full">
-              BVN
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-medium px-2.5 py-1 rounded-full shrink-0">
+              {user.bvn ? `BVN: ${user.bvn}` : user.nin ? `NIN: ${user.nin}` : 'No ID'}
             </span>
 
-            {/* Selfie placeholder */}
-            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
-              <span className="text-[10px] text-gray-400 text-center leading-tight">No<br/>photo</span>
+            {/* Selfie */}
+            <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0 flex items-center justify-center">
+              {user.selfie_url
+                ? <a href={user.selfie_url} target="_blank" rel="noreferrer">
+                    <img src={user.selfie_url} alt="Selfie" className="w-full h-full object-cover hover:opacity-80 transition-opacity" />
+                  </a>
+                : <span className="text-[10px] text-gray-400 text-center leading-tight">No<br/>photo</span>
+              }
             </div>
 
             {/* Actions */}
