@@ -103,7 +103,7 @@ export default function AdminKYCPage() {
               <p className="text-xs text-gray-400">{user.email}</p>
               <div className="flex items-center gap-2 mt-1">
                 <StatusBadge status={user.kyc_status} />
-                <span className="text-xs text-gray-400">Submitted {formatDate(user.created_at)}</span>
+                <span className="text-xs text-gray-400">Submitted {formatDate(user.kyc_submitted_at ?? user.created_at)}</span>
               </div>
             </div>
 
