@@ -46,6 +46,7 @@ export const getOrders = (role, status) => {
 }
 export const getOrder = (id) => client.get(`/orders/${id}/`)
 export const createOrder = (data) => client.post('/orders/create/', data)
+export const walletCheckout = (data) => client.post('/orders/wallet-checkout/', data)
 export const confirmOrder = (id) => client.post(`/orders/${id}/confirm/`)
 export const cancelOrder = (id, reason) => client.post(`/orders/${id}/cancel/`, { reason })
 export const uploadDispatchProof = (id, data) => client.post(`/orders/${id}/dispatch/`, data)

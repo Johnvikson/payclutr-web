@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Truck, Package, Zap, MapPin, Shield, CheckCircle2 } from 'lucide-react'
 import { formatNaira } from '../../utils/formatters.js'
-import { createOrder } from '../../api/endpoints.js'
+import { walletCheckout } from '../../api/endpoints.js'
+import { useAuth } from '../../hooks/useAuth.js'
+import { useToast } from '../ui/Toast.jsx'
 
 const SHIPPING_OPTIONS = [
   { key: 'park_waybill',  field: 'shipping_park',         icon: Truck,   label: 'Park Waybill',   desc: 'Buyer pays driver on delivery' },
@@ -13,6 +15,8 @@ const SHIPPING_OPTIONS = [
 
 export default function CheckoutModal({ isOpen, onClose, listing }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { showToast } = useToast()
   const [selectedShipping, setSelectedShipping] = useState('')
   const [loading, setLoading]   = useState(false)
   const [order, setOrder]       = useState(null)
@@ -25,11 +29,21 @@ export default function CheckoutModal({ isOpen, onClose, listing }) {
 
   async function handleConfirm() {
     if (!selectedShipping) return
+    if ((user?.wallet_balance ?? 0) < itemPrice) {
+      showToast('Insufficient wallet balance. Please fund your wallet to continue.', 'error')
+      onClose()
+      navigate('/wallet')
+      return
+    }
     setLoading(true)
     try {
-      const result = await createOrder({ listing_id: listing.id, shipping_method: selectedShipping })
-      window.location.href = result.payment_url
-    } catch {
+      const result = await walletCheckout({ listing_id: listing.id, shipping_method: selectedShipping })
+      setOrder(result)
+      setDone(true)
+    } catch (err) {
+      const msg = err?.response?.data?.detail ?? 'Payment failed. Please try again.'
+      showToast(msg, 'error')
+    } finally {
       setLoading(false)
     }
   }
