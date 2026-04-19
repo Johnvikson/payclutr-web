@@ -1,4 +1,5 @@
-import { createContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useState, useEffect, useCallback, useRef } from 'react'
+import { getMe } from '../api/endpoints.js'
 
 export const AuthContext = createContext(null)
 
@@ -10,6 +11,18 @@ export function AuthProvider({ children }) {
   const [user, setUser]     = useState(null)
   const [token, setToken]   = useState(null)
   const [loading, setLoading] = useState(true)
+  const tokenRef = useRef(null)
+
+  const refreshUser = useCallback(async () => {
+    if (!tokenRef.current) return
+    try {
+      const fresh = await getMe()
+      setUser(fresh)
+      localStorage.setItem(USER_KEY, JSON.stringify(fresh))
+    } catch {
+      // silently ignore — token may be expired
+    }
+  }, [])
 
   useEffect(() => {
     const storedToken = localStorage.getItem(TOKEN_KEY)
@@ -17,6 +30,7 @@ export function AuthProvider({ children }) {
 
     if (storedToken && storedUser) {
       try {
+        tokenRef.current = storedToken
         setToken(storedToken)
         setUser(JSON.parse(storedUser))
       } catch {
@@ -29,10 +43,22 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }, [])
 
+  // Refresh user profile on window focus and every 60s
+  useEffect(() => {
+    const onFocus = () => refreshUser()
+    window.addEventListener('focus', onFocus)
+    const interval = setInterval(refreshUser, 60000)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      clearInterval(interval)
+    }
+  }, [refreshUser])
+
   const login = useCallback((userData, authToken, refreshToken) => {
     localStorage.setItem(TOKEN_KEY, authToken)
     localStorage.setItem(USER_KEY, JSON.stringify(userData))
     if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
+    tokenRef.current = authToken
     setToken(authToken)
     setUser(userData)
   }, [])
@@ -41,6 +67,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(REFRESH_KEY)
     localStorage.removeItem(USER_KEY)
+    tokenRef.current = null
     setToken(null)
     setUser(null)
   }, [])
