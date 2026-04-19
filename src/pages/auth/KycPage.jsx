@@ -2,6 +2,8 @@ import { useState, useRef } from 'react'
 import { ShieldCheck, Clock, AlertCircle, Camera, Upload, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
 import { useToast } from '../../components/ui/Toast.jsx'
+import { submitKyc } from '../../api/endpoints.js'
+import { uploadImage } from '../../lib/supabase.js'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
@@ -58,12 +60,19 @@ export default function KycPage() {
     if (!valid) return
 
     setLoading(true)
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1500))
-    setLoading(false)
-    updateUser({ kyc_status: 'pending' })
-    setSubmitted(true)
-    showToast('KYC documents submitted successfully!', 'success')
+    try {
+      const selfieUrl = await uploadImage(selfie.file, 'kyc')
+      const payload = idType === 'bvn' ? { bvn: idNumber, selfie_url: selfieUrl } : { nin: idNumber, selfie_url: selfieUrl }
+      await submitKyc(payload)
+      updateUser({ kyc_status: 'pending' })
+      setSubmitted(true)
+      showToast('KYC documents submitted successfully!', 'success')
+    } catch (err) {
+      const msg = err?.response?.data?.detail ?? err?.message ?? 'Submission failed. Please try again.'
+      showToast(msg, 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Verified state
