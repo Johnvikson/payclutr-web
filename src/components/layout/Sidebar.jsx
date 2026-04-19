@@ -25,15 +25,16 @@ export default function Sidebar({ onClose }) {
     const status = user?.kyc_status
     if (status === 'verified') return
     e.preventDefault()
-    onClose?.()
     if (status === 'pending') {
       showToast('Your identity verification is under review. You can sell once approved.', 'error')
+      onClose?.()
     } else {
       const msg = status === 'rejected'
         ? 'Your KYC was rejected. Please resubmit your documents.'
         : 'Please complete identity verification before selling.'
       showToast(msg, 'error')
-      setTimeout(() => navigate('/kyc'), 1500)
+      navigate('/kyc')
+      onClose?.()
     }
   }
 
