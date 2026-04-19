@@ -68,6 +68,8 @@ export const sendDisputeMessage = (id, data) => client.post(`/disputes/${id}/mes
 // ── Wallet ────────────────────────────────────────────────────────────────────
 export const getWallet = () => client.get('/wallet/')
 export const requestWithdrawal = (data) => client.post('/wallet/withdraw/', data)
+export const getDepositAccount = () => client.get('/wallet/deposit-account/')
+export const setupDepositAccount = (data) => client.post('/wallet/deposit-account/setup/', data)
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 export const getNotifications = () => client.get('/notifications/')

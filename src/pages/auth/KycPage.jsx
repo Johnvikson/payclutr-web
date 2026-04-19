@@ -12,7 +12,7 @@ export default function KycPage() {
   const { showToast } = useToast()
   const fileInputRef = useRef(null)
 
-  const [idType, setIdType] = useState('bvn')
+  const [idType, setIdType] = useState('nin')
   const [idNumber, setIdNumber] = useState('')
   const [idError, setIdError] = useState('')
   const [selfie, setSelfie] = useState(null) // { file, preview }
@@ -62,7 +62,7 @@ export default function KycPage() {
     setLoading(true)
     try {
       const selfieUrl = await uploadImage(selfie.file, 'kyc')
-      const payload = idType === 'bvn' ? { bvn: idNumber, selfie_url: selfieUrl } : { nin: idNumber, selfie_url: selfieUrl }
+      const payload = { nin: idNumber, selfie_url: selfieUrl }
       await submitKyc(payload)
       updateUser({ kyc_status: 'pending' })
       setSubmitted(true)
@@ -139,41 +139,20 @@ export default function KycPage() {
             Provide your BVN or NIN for identity verification.
           </p>
 
-          {/* ID Type toggle */}
-          <div className="flex gap-2 mb-5">
-            {['bvn', 'nin'].map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => { setIdType(type); setIdNumber(''); setIdError('') }}
-                className={[
-                  'px-5 py-2 rounded-full text-sm font-medium transition-colors border',
-                  idType === type
-                    ? 'bg-brand-600 text-white border-brand-600'
-                    : 'bg-white text-content-secondary border-surface-border hover:border-brand-300',
-                ].join(' ')}
-              >
-                {type.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
           <div>
-            <label className="form-label">
-              {idType === 'bvn' ? 'Bank Verification Number (BVN)' : 'National Identification Number (NIN)'}
-            </label>
+            <label className="form-label">National Identification Number (NIN)</label>
             <input
               type="text"
               inputMode="numeric"
               value={idNumber}
               onChange={handleIdNumberChange}
-              placeholder={`Enter your 11-digit ${idType.toUpperCase()}`}
+              placeholder="Enter your 11-digit NIN"
               maxLength={11}
               className={`input-field ${idError ? 'input-error' : ''}`}
             />
             {idError && <p className="form-error">{idError}</p>}
             <p className="text-xs text-content-tertiary mt-1.5">
-              Your {idType.toUpperCase()} is encrypted and never shared with third parties.
+              Your NIN is encrypted and never shared with third parties.
             </p>
           </div>
         </div>

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { Wallet, ArrowDownLeft, ArrowUpRight, Building2 } from 'lucide-react'
-import { getWallet } from '../../api/endpoints.js'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Wallet, ArrowDownLeft, ArrowUpRight, Building2, Copy, CheckCircle2 } from 'lucide-react'
+import { getWallet, getDepositAccount, setupDepositAccount } from '../../api/endpoints.js'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useToast } from '../../components/ui/Toast.jsx'
 import { formatNaira, formatDate } from '../../utils/formatters.js'
 import StatusBadge from '../../components/ui/StatusBadge.jsx'
 import WithdrawalModal from '../../components/wallet/WithdrawalModal.jsx'
@@ -55,6 +56,106 @@ function WithdrawalRow({ w }) {
   )
 }
 
+function DepositAccountCard() {
+  const { showToast } = useToast()
+  const qc = useQueryClient()
+  const [bvn, setBvn] = useState('')
+  const [bvnError, setBvnError] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const { data: account, isLoading } = useQuery({
+    queryKey: ['deposit-account'],
+    queryFn: getDepositAccount,
+  })
+
+  const mutation = useMutation({
+    mutationFn: setupDepositAccount,
+    onSuccess: () => {
+      qc.invalidateQueries(['deposit-account'])
+      showToast('Deposit account created successfully!', 'success')
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.detail ?? 'Setup failed. Please try again.'
+      showToast(msg, 'error')
+    },
+  })
+
+  function handleCopy(text) {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!bvn || bvn.length !== 11) {
+      setBvnError('BVN must be exactly 11 digits')
+      return
+    }
+    setBvnError('')
+    mutation.mutate({ bvn })
+  }
+
+  if (isLoading) return null
+
+  if (account?.account_number) {
+    return (
+      <div className="bg-white border border-gray-100 rounded-xl p-5 mb-6">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Deposit Account</p>
+        <p className="text-xs text-gray-400 mb-4">Transfer from your personal bank account to fund your wallet. Only transfers matching your registered name will be accepted.</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between py-2 border-b border-gray-100">
+            <span className="text-xs text-gray-500">Bank</span>
+            <span className="text-sm font-semibold text-gray-900">{account.bank_name}</span>
+          </div>
+          <div className="flex items-center justify-between py-2 border-b border-gray-100">
+            <span className="text-xs text-gray-500">Account Number</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-gray-900 tracking-wide">{account.account_number}</span>
+              <button onClick={() => handleCopy(account.account_number)} className="text-gray-400 hover:text-brand-500 transition-colors">
+                {copied ? <CheckCircle2 size={14} className="text-green-500" /> : <Copy size={14} />}
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <span className="text-xs text-gray-500">Account Name</span>
+            <span className="text-sm font-medium text-gray-900">{account.account_name}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-xl p-5 mb-6">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Fund Your Wallet</p>
+      <p className="text-xs text-gray-400 mb-4">
+        Enter your BVN to create a dedicated deposit account. Only transfers from your personal bank account matching your name will be accepted.
+      </p>
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <div className="flex-1">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={bvn}
+            onChange={(e) => { setBvn(e.target.value.replace(/\D/g, '').slice(0, 11)); setBvnError('') }}
+            placeholder="Enter 11-digit BVN"
+            className={`input-field text-sm ${bvnError ? 'input-error' : ''}`}
+          />
+          {bvnError && <p className="form-error mt-1">{bvnError}</p>}
+        </div>
+        <button
+          type="submit"
+          disabled={mutation.isPending}
+          className="btn-primary px-4 py-2 text-sm shrink-0"
+        >
+          {mutation.isPending ? 'Verifying…' : 'Verify BVN'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
 export default function WalletPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('transactions')
@@ -101,13 +202,14 @@ export default function WalletPage() {
           ) : (
             <div className="text-right">
               <p className="text-xs text-gray-500">Verify identity to withdraw</p>
-              <Link to="/kyc" className="text-xs text-brand-400 underline">
-                Verify Now
-              </Link>
+              <Link to="/kyc" className="text-xs text-brand-400 underline">Verify Now</Link>
             </div>
           )}
         </div>
       </div>
+
+      {/* Deposit account */}
+      <DepositAccountCard />
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-100 mb-6">
