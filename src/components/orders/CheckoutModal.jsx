@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Truck, Package, Zap, MapPin, Shield, CheckCircle2 } from 'lucide-react'
 import { formatNaira } from '../../utils/formatters.js'
-import { PLATFORM_FEE_PERCENT } from '../../utils/constants.js'
 import { createOrder } from '../../api/endpoints.js'
 
 const SHIPPING_OPTIONS = [
@@ -23,8 +22,6 @@ export default function CheckoutModal({ isOpen, onClose, listing }) {
 
   const available  = SHIPPING_OPTIONS.filter((o) => listing[o.field])
   const itemPrice  = listing.price || 0
-  const fee        = Math.round(itemPrice * PLATFORM_FEE_PERCENT / 100)
-  const total      = itemPrice + fee
 
   async function handleConfirm() {
     if (!selectedShipping) return
@@ -107,17 +104,9 @@ export default function CheckoutModal({ isOpen, onClose, listing }) {
             {/* Summary */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Order Summary</p>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Item price</span>
-                <span className="font-medium text-gray-800">{formatNaira(itemPrice)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Platform fee ({PLATFORM_FEE_PERCENT}%)</span>
-                <span className="font-medium text-gray-800">{formatNaira(fee)}</span>
-              </div>
               <div className="border-t border-gray-200 pt-2 flex justify-between">
                 <span className="text-sm font-semibold text-gray-900">Total</span>
-                <span className="text-sm font-bold text-brand-500">{formatNaira(total)}</span>
+                <span className="text-sm font-bold text-brand-500">{formatNaira(itemPrice)}</span>
               </div>
               <p className="text-[10px] text-gray-400">Shipping costs paid directly to carrier</p>
             </div>
