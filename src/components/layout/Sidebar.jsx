@@ -22,9 +22,16 @@ export default function Sidebar({ onClose }) {
   }
 
   const handleSell = (e) => {
-    if (user?.kyc_status !== 'verified') {
-      e.preventDefault()
-      onClose?.()
+    const status = user?.kyc_status
+    if (status === 'verified') return
+    e.preventDefault()
+    onClose?.()
+    if (status === 'pending') {
+      showToast('Your identity verification is under review. You can sell once approved.', 'error')
+    } else if (status === 'rejected') {
+      showToast('Your KYC was rejected. Please resubmit your documents.', 'error')
+      navigate('/kyc')
+    } else {
       showToast('Please complete identity verification before selling.', 'error')
       navigate('/kyc')
     }

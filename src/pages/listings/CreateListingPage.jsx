@@ -71,8 +71,16 @@ export default function CreateListingPage() {
   const fileInputRef = useRef(null)
 
   if (user && user.kyc_status !== 'verified') {
-    showToast('Please complete identity verification before selling.', 'error')
-    navigate('/kyc', { replace: true })
+    if (user.kyc_status === 'pending') {
+      showToast('Your identity verification is under review. You can sell once approved.', 'error')
+    } else if (user.kyc_status === 'rejected') {
+      showToast('Your KYC was rejected. Please resubmit your documents.', 'error')
+      navigate('/kyc', { replace: true })
+    } else {
+      showToast('Please complete identity verification before selling.', 'error')
+      navigate('/kyc', { replace: true })
+    }
+    navigate(-1)
     return null
   }
 
