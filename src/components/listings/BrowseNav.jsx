@@ -3,14 +3,32 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Search, Bell, ChevronDown, LogOut, User, Package, Wallet, ShieldCheck } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useToast } from '../ui/Toast.jsx'
 import { getUnreadCount } from '../../api/endpoints.js'
 import UserAvatar from '../ui/UserAvatar.jsx'
 
 export default function BrowseNav({ searchValue = '', onSearch, showSearch = true }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [userOpen, setUserOpen] = useState(false)
   const userRef = useRef(null)
+
+  const handleSell = (e) => {
+    if (!user) return
+    const status = user.kyc_status
+    if (status === 'verified') return
+    e.preventDefault()
+    if (status === 'pending') {
+      showToast('Your identity verification is under review. You can sell once approved.', 'error')
+    } else {
+      const msg = status === 'rejected'
+        ? 'Your KYC was rejected. Please resubmit your documents.'
+        : 'Please complete identity verification before selling.'
+      showToast(msg, 'error')
+      navigate('/kyc')
+    }
+  }
 
   const { data: unread } = useQuery({
     queryKey: ['notifications', 'unread'],
@@ -95,6 +113,7 @@ export default function BrowseNav({ searchValue = '', onSearch, showSearch = tru
             {/* Sell CTA */}
             <Link
               to={user ? '/listings/create' : '/login'}
+              onClick={handleSell}
               className="hidden sm:flex items-center gap-1 btn-primary py-2 text-xs ml-1"
             >
               + Sell

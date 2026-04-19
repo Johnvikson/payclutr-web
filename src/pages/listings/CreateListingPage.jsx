@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Camera, X, Truck, Package, Zap, MapPin, AlertCircle } from 'lucide-react'
 import { useToast } from '../../components/ui/Toast.jsx'
@@ -70,21 +70,23 @@ export default function CreateListingPage() {
   const { user } = useAuth()
   const fileInputRef = useRef(null)
 
-  if (user && user.kyc_status !== 'verified') {
-    if (user.kyc_status === 'pending') {
+  const [step, setStep] = useState(1)
+
+  useEffect(() => {
+    if (!user) return
+    const status = user.kyc_status
+    if (status === 'verified') return
+    if (status === 'pending') {
       showToast('Your identity verification is under review. You can sell once approved.', 'error')
-    } else if (user.kyc_status === 'rejected') {
-      showToast('Your KYC was rejected. Please resubmit your documents.', 'error')
-      navigate('/kyc', { replace: true })
+      navigate(-1)
     } else {
-      showToast('Please complete identity verification before selling.', 'error')
+      const msg = status === 'rejected'
+        ? 'Your KYC was rejected. Please resubmit your documents.'
+        : 'Please complete identity verification before selling.'
+      showToast(msg, 'error')
       navigate('/kyc', { replace: true })
     }
-    navigate(-1)
-    return null
-  }
-
-  const [step, setStep] = useState(1)
+  }, [user])
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
   const [isDragging, setIsDragging] = useState(false)
