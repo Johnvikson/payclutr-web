@@ -61,7 +61,7 @@ export default function KycPage() {
 
     setLoading(true)
     try {
-      const selfieUrl = await uploadImage(selfie.file, 'kyc')
+      const selfieUrl = await uploadImage(selfie.file, 'listings')
       const payload = idType === 'bvn' ? { bvn: idNumber, selfie_url: selfieUrl } : { nin: idNumber, selfie_url: selfieUrl }
       await submitKyc(payload)
       updateUser({ kyc_status: 'pending' })
