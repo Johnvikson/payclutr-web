@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { Search, Tag, ShoppingBag, Wallet, PlusCircle, LogOut, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useToast } from '../ui/Toast.jsx'
 import UserAvatar from '../ui/UserAvatar.jsx'
 
 const navItems = [
@@ -13,10 +14,20 @@ const navItems = [
 export default function Sidebar({ onClose }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { showToast } = useToast()
 
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const handleSell = (e) => {
+    if (user?.kyc_status !== 'verified') {
+      e.preventDefault()
+      onClose?.()
+      showToast('Please complete identity verification before selling.', 'error')
+      navigate('/kyc')
+    }
   }
 
   return (
@@ -33,7 +44,7 @@ export default function Sidebar({ onClose }) {
 
       {/* Sell CTA */}
       <div className="px-4 pb-4 shrink-0">
-        <NavLink to="/listings/create" onClick={onClose} className="btn-primary w-full justify-center text-xs py-2">
+        <NavLink to="/listings/create" onClick={handleSell} className="btn-primary w-full justify-center text-xs py-2">
           <PlusCircle size={14} />
           Sell an Item
         </NavLink>

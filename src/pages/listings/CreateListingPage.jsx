@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Camera, X, Truck, Package, Zap, MapPin, AlertCircle } from 'lucide-react'
 import { useToast } from '../../components/ui/Toast.jsx'
+import { useAuth } from '../../hooks/useAuth.js'
 import { createListing } from '../../api/endpoints.js'
 import { uploadImage } from '../../lib/supabase.js'
 import { CATEGORIES, NIGERIAN_STATES } from '../../utils/constants.js'
@@ -66,7 +67,14 @@ function StepIndicator({ current }) {
 export default function CreateListingPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { user } = useAuth()
   const fileInputRef = useRef(null)
+
+  if (user && user.kyc_status !== 'verified') {
+    showToast('Please complete identity verification before selling.', 'error')
+    navigate('/kyc', { replace: true })
+    return null
+  }
 
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(EMPTY_FORM)
