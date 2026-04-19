@@ -132,7 +132,7 @@ export default function CreateListingPage() {
       showToast('Listing published successfully!', 'success')
       navigate(`/listings/${result.id}`)
     } catch (err) {
-      const msg = err?.response?.data?.detail || 'Failed to publish. Please try again.'
+      const msg = err?.response?.data?.detail ?? err?.message ?? 'Failed to publish. Please try again.'
       showToast(msg, 'error')
     } finally {
       setPublishing(false)
