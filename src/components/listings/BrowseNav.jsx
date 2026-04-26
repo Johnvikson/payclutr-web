@@ -50,15 +50,16 @@ export default function BrowseNav({ searchValue = '', onSearch, showSearch = tru
     <nav className="sticky top-0 z-40 bg-white border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4">
         <div className="h-14 flex items-center gap-3">
+
           {/* Logo */}
           <Link to="/browse" className="flex items-center gap-1.5 shrink-0">
             <div className="w-7 h-7 bg-brand-500 rounded-lg flex items-center justify-center">
               <ShieldCheck size={14} className="text-white" />
             </div>
-            <span className="text-sm font-bold text-gray-900 hidden sm:block">PayClutr</span>
+            <span className="text-sm font-bold text-gray-900">PayClutr</span>
           </Link>
 
-          {/* Search */}
+          {/* Desktop search */}
           {showSearch && (
             <div className="flex-1 max-w-lg hidden sm:block">
               <div className="relative">
@@ -74,6 +75,7 @@ export default function BrowseNav({ searchValue = '', onSearch, showSearch = tru
             </div>
           )}
 
+          {/* Desktop nav links (non-search mode) */}
           {!showSearch && (
             <div className="hidden sm:flex flex-1 items-center justify-center gap-6">
               {[
@@ -110,16 +112,17 @@ export default function BrowseNav({ searchValue = '', onSearch, showSearch = tru
               )}
             </button>
 
-            {/* Sell CTA */}
+            {/* Sell CTA — visible on all screen sizes */}
             <Link
               to={user ? '/listings/create' : '/login'}
               onClick={handleSell}
-              className="hidden sm:flex items-center gap-1 btn-primary py-2 text-xs ml-1"
+              className="flex items-center gap-1 btn-primary py-1.5 px-3 text-xs ml-1"
             >
-              + Sell
+              <span className="text-base leading-none font-light">+</span>
+              <span>List</span>
             </Link>
 
-            {/* User */}
+            {/* User dropdown */}
             {user ? (
               <div className="relative ml-1" ref={userRef}>
                 <button
@@ -173,7 +176,7 @@ export default function BrowseNav({ searchValue = '', onSearch, showSearch = tru
           </div>
         </div>
 
-        {/* Mobile search */}
+        {/* Mobile search row (when showSearch=true) */}
         {showSearch && (
           <div className="pb-3 sm:hidden">
             <div className="relative">

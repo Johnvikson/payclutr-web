@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import BrowseNav from '../../components/listings/BrowseNav.jsx'
+import BottomTabBar from '../../components/layout/BottomTabBar.jsx'
 import ListingCard from '../../components/listings/ListingCard.jsx'
 import { SkeletonCard } from '../../components/ui/Skeleton.jsx'
 import { getListings } from '../../api/endpoints.js'
@@ -208,8 +209,9 @@ export default function BrowsePage() {
     filters.shipping.length + Number(!!activeCategory)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
       <BrowseNav showSearch={false} />
+      <BottomTabBar />
 
       {/* Search + categories bar */}
       <div className="bg-white border-b border-gray-100">
@@ -256,7 +258,7 @@ export default function BrowsePage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8 pb-16">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex gap-8 items-start">
 
           {/* Filter sidebar — desktop */}
