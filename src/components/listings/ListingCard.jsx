@@ -22,10 +22,10 @@ export default function ListingCard({ listing }) {
     <button
       type="button"
       onClick={() => navigate(`/listings/${listing.id}`)}
-      className="group text-left bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all"
+      className="group text-left bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl overflow-hidden hover:border-gray-200 dark:hover:border-zinc-700 hover:-translate-y-0.5 hover:shadow-md transition-all"
     >
       {/* Image */}
-      <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+      <div className="relative aspect-[4/3] bg-gray-100 dark:bg-zinc-800 overflow-hidden">
         {img ? (
           <img
             src={img}
@@ -34,7 +34,7 @@ export default function ListingCard({ listing }) {
             className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">
+          <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-zinc-600 text-xs">
             No image
           </div>
         )}
@@ -47,9 +47,9 @@ export default function ListingCard({ listing }) {
 
       {/* Body */}
       <div className="p-3">
-        <div className="text-sm font-medium text-gray-900 line-clamp-1">{listing.title}</div>
+        <div className="text-sm font-medium text-gray-900 dark:text-zinc-100 line-clamp-1">{listing.title}</div>
         <div className="mt-1 text-base font-bold text-brand">{formatNaira(listing.price)}</div>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-gray-400">
+        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-zinc-500">
           <MapPin size={11} className="shrink-0" />
           <span className="truncate">{location || '—'}</span>
           {listing.created_at && (

@@ -10,6 +10,7 @@ import { useToast } from '../ui/Toast.jsx'
 import UserAvatar from '../ui/UserAvatar.jsx'
 import Logo from '../ui/Logo.jsx'
 import Button from '../ui/Button.jsx'
+import ThemeToggle from '../ui/ThemeToggle.jsx'
 import { formatTimeAgo } from '../../utils/formatters.js'
 
 const TITLES = {
@@ -90,11 +91,11 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
   }
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-60 h-14 bg-white border-b border-gray-100 z-30 flex items-center px-4 lg:px-6 gap-3">
+    <header className="fixed top-0 right-0 left-0 lg:left-60 h-14 bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 z-30 flex items-center px-4 lg:px-6 gap-3">
       {/* Mobile: hamburger + logo */}
       <button
         onClick={onMenuToggle}
-        className="lg:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
+        className="lg:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 transition-colors"
         aria-label="Open menu"
       >
         <Menu size={20} />
@@ -104,7 +105,7 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
       </Link>
 
       {/* Desktop: page title */}
-      <h2 className="hidden lg:block text-sm font-semibold text-gray-900 shrink-0">
+      <h2 className="hidden lg:block text-sm font-semibold text-gray-900 dark:text-zinc-100 shrink-0">
         {pageTitle(location.pathname)}
       </h2>
 
@@ -118,7 +119,7 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
               value={search ?? ''}
               onChange={(e) => onSearchChange?.(e.target.value)}
               placeholder="Search for anything…"
-              className="w-full h-9 pl-9 pr-3 text-sm rounded-lg bg-gray-50 border border-transparent focus:bg-white focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand/10 transition-colors"
+              className="w-full h-9 pl-9 pr-3 text-sm rounded-lg bg-gray-50 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 border border-transparent focus:bg-white dark:focus:bg-zinc-900 focus:border-gray-200 dark:focus:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand/10 transition-colors"
             />
           </div>
         </div>
@@ -143,11 +144,14 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
         <Plus size={18} />
       </Link>
 
+      {/* Theme toggle */}
+      <ThemeToggle />
+
       {/* Notifications */}
       <div className="relative" ref={notifRef}>
         <button
           onClick={() => { setNotifOpen((o) => !o); setUserOpen(false) }}
-          className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
+          className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 transition-colors"
           aria-label="Notifications"
         >
           <Bell size={17} />
@@ -156,31 +160,31 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
           )}
         </button>
         {notifOpen && user && (
-          <div className="absolute right-0 top-11 w-80 bg-white rounded-xl shadow-modal border border-gray-100 z-50 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-              <span className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Notifications</span>
+          <div className="absolute right-0 top-11 w-80 bg-white dark:bg-zinc-900 rounded-xl shadow-modal border border-gray-100 dark:border-zinc-800 z-50 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-zinc-800">
+              <span className="text-xs font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">Notifications</span>
               {unreadCount > 0 && (
                 <button onClick={() => markAllMutation.mutate()} className="text-xs text-brand hover:opacity-80 font-medium">
                   Mark all read
                 </button>
               )}
             </div>
-            <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+            <div className="max-h-80 overflow-y-auto divide-y divide-gray-50 dark:divide-zinc-800">
               {notifications.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-8">No notifications yet</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-8">No notifications yet</p>
               ) : (
                 notifications.slice(0, 6).map((n) => (
                   <Link
                     key={n.id}
                     to={n.link || '/notifications'}
                     onClick={() => setNotifOpen(false)}
-                    className={`flex gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${!n.is_read ? 'bg-orange-50/40' : ''}`}
+                    className={`flex gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors ${!n.is_read ? 'bg-orange-50/40 dark:bg-orange-900/10' : ''}`}
                   >
                     <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${!n.is_read ? 'bg-brand' : 'bg-transparent'}`} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-gray-800 truncate">{n.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">{n.message}</p>
-                      <p className="text-[10px] text-gray-300 mt-0.5">{formatTimeAgo(n.created_at)}</p>
+                      <p className="text-xs font-medium text-gray-800 dark:text-zinc-200 truncate">{n.title}</p>
+                      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5 truncate">{n.message}</p>
+                      <p className="text-[10px] text-gray-300 dark:text-zinc-600 mt-0.5">{formatTimeAgo(n.created_at)}</p>
                     </div>
                   </Link>
                 ))
@@ -189,7 +193,7 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
             <Link
               to="/notifications"
               onClick={() => setNotifOpen(false)}
-              className="block text-center text-xs font-medium text-brand hover:opacity-80 py-3 border-t border-gray-100"
+              className="block text-center text-xs font-medium text-brand hover:opacity-80 py-3 border-t border-gray-100 dark:border-zinc-800"
             >
               View all
             </Link>
@@ -202,16 +206,16 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
         <div className="relative" ref={userRef}>
           <button
             onClick={() => { setUserOpen((o) => !o); setNotifOpen(false) }}
-            className="flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <UserAvatar user={user} size="sm" />
-            <ChevronDown size={13} className="text-gray-400 hidden sm:block" />
+            <ChevronDown size={13} className="text-gray-400 dark:text-zinc-500 hidden sm:block" />
           </button>
           {userOpen && (
-            <div className="absolute right-0 top-11 w-52 bg-white rounded-xl shadow-modal border border-gray-100 z-50 py-1">
-              <div className="px-3 py-2.5 border-b border-gray-100">
-                <p className="text-xs font-semibold text-gray-900 truncate">{user.first_name} {user.last_name}</p>
-                <p className="text-[10px] text-gray-400 truncate mt-0.5">{user.email}</p>
+            <div className="absolute right-0 top-11 w-52 bg-white dark:bg-zinc-900 rounded-xl shadow-modal border border-gray-100 dark:border-zinc-800 z-50 py-1">
+              <div className="px-3 py-2.5 border-b border-gray-100 dark:border-zinc-800">
+                <p className="text-xs font-semibold text-gray-900 dark:text-zinc-100 truncate">{user.first_name} {user.last_name}</p>
+                <p className="text-[10px] text-gray-400 dark:text-zinc-500 truncate mt-0.5">{user.email}</p>
               </div>
               {[
                 { to: `/profile/${user.id}`, icon: User,        label: 'My profile' },
@@ -223,16 +227,16 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
                   key={to}
                   to={to}
                   onClick={() => setUserOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  <Icon size={13} className="text-gray-400" />
+                  <Icon size={13} className="text-gray-400 dark:text-zinc-500" />
                   {label}
                 </Link>
               ))}
-              <div className="border-t border-gray-100 my-1" />
+              <div className="border-t border-gray-100 dark:border-zinc-800 my-1" />
               <button
                 onClick={() => { logout(); navigate('/login') }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 <LogOut size={13} />
                 Log out
@@ -241,7 +245,7 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
           )}
         </div>
       ) : (
-        <Link to="/login" className="text-xs font-medium text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+        <Link to="/login" className="text-xs font-medium text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-zinc-100 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
           Sign in
         </Link>
       )}

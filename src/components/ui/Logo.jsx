@@ -15,7 +15,7 @@ export default function Logo({ size = 'md', mono = false, markOnly = false }) {
         className="rounded-[22%] object-contain shrink-0"
       />
       {!markOnly && (
-        <span className={`font-bold tracking-tight ${FONT_SIZES[size]} ${mono ? 'text-white' : 'text-gray-900'}`}>
+        <span className={`font-bold tracking-tight ${FONT_SIZES[size]} ${mono ? 'text-white' : 'text-gray-900 dark:text-zinc-100'}`}>
           PayClutr
         </span>
       )}

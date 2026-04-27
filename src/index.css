@@ -22,6 +22,17 @@
     -moz-osx-font-smoothing: grayscale;
     color: #111827;
     background-color: #F9FAFB;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  html.dark body {
+    color: #f4f4f5;            /* zinc-100 */
+    background-color: #09090b; /* zinc-950 */
+  }
+
+  html.dark ::selection {
+    background-color: rgba(232, 71, 10, 0.3);
+    color: inherit;
   }
 
   #root {

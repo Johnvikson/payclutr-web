@@ -13,7 +13,7 @@ export default function BottomTabBar() {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 h-16 bg-white border-t border-gray-100 flex items-stretch lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 h-16 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800 flex items-stretch lg:hidden">
       {tabs.map(({ to, icon: Icon, label }) => (
         <NavLink
           key={label}
@@ -21,7 +21,7 @@ export default function BottomTabBar() {
           end={to === '/browse'}
           className={({ isActive }) =>
             `flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
-              isActive ? 'text-brand' : 'text-gray-500'
+              isActive ? 'text-brand' : 'text-gray-500 dark:text-zinc-500'
             }`
           }
         >

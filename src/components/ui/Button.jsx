@@ -10,10 +10,10 @@ const SIZES = {
 
 const VARIANTS = {
   primary:   'bg-brand text-white hover:bg-[color:var(--brand-700)] focus:ring-brand',
-  secondary: 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 focus:ring-gray-300',
+  secondary: 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800 focus:ring-gray-300',
   danger:    'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-  ghost:     'text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:ring-gray-300',
-  outline:   'border border-gray-200 text-gray-700 hover:bg-gray-50 bg-transparent focus:ring-gray-300',
+  ghost:     'text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 focus:ring-gray-300',
+  outline:   'border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800 bg-transparent focus:ring-gray-300',
 }
 
 const Button = forwardRef(function Button(

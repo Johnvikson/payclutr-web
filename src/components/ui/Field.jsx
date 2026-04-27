@@ -4,11 +4,11 @@ export function Field({ label, error, hint, children, className = '' }) {
   return (
     <div className={className}>
       {label && (
-        <label className="block text-xs font-medium text-gray-700 mb-1.5">{label}</label>
+        <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1.5">{label}</label>
       )}
       {children}
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
-      {hint && !error && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+      {hint && !error && <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">{hint}</p>}
     </div>
   )
 }
@@ -19,17 +19,17 @@ export function TextInput({ prefix, suffix, error, className = '', ...rest }) {
   return (
     <div className={`relative flex items-center ${className}`}>
       {prefix && (
-        <span className={`absolute left-3 text-sm text-gray-500 pointer-events-none ${wide ? 'pr-3 border-r border-gray-200' : ''}`}>
+        <span className={`absolute left-3 text-sm text-gray-500 dark:text-zinc-500 pointer-events-none ${wide ? 'pr-3 border-r border-gray-200 dark:border-zinc-700' : ''}`}>
           {prefix}
         </span>
       )}
       <input
         {...rest}
-        className={`w-full h-10 ${prefixPad} ${suffix ? 'pr-8' : 'pr-3'} text-sm rounded-lg border bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 transition-colors ${
-          error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand'
+        className={`w-full h-10 ${prefixPad} ${suffix ? 'pr-8' : 'pr-3'} text-sm rounded-lg border bg-white dark:bg-zinc-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-brand/20 transition-colors ${
+          error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 dark:border-zinc-700 focus:border-brand'
         }`}
       />
-      {suffix && <span className="absolute right-3 text-sm text-gray-500">{suffix}</span>}
+      {suffix && <span className="absolute right-3 text-sm text-gray-500 dark:text-zinc-500">{suffix}</span>}
     </div>
   )
 }
@@ -39,8 +39,8 @@ export function TextArea({ rows = 4, error, className = '', ...rest }) {
     <textarea
       rows={rows}
       {...rest}
-      className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand/20 transition-colors ${
-        error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand'
+      className={`w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-brand/20 transition-colors ${
+        error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 dark:border-zinc-700 focus:border-brand'
       } ${className}`}
     />
   )
@@ -52,7 +52,7 @@ export function Select({ children, className = '', ...rest }) {
   return (
     <select
       {...rest}
-      className={`w-full h-10 px-3 pr-8 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 appearance-none bg-no-repeat ${className}`}
+      className={`w-full h-10 px-3 pr-8 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 appearance-none bg-no-repeat ${className}`}
       style={{ backgroundImage: CHEVRON, backgroundPosition: 'right 0.75rem center' }}
     >
       {children}
@@ -62,11 +62,11 @@ export function Select({ children, className = '', ...rest }) {
 
 export function Checkbox({ checked, onChange, label, className = '' }) {
   return (
-    <label className={`flex items-center gap-2 cursor-pointer text-sm text-gray-700 ${className}`}>
+    <label className={`flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-zinc-300 ${className}`}>
       <span
         onClick={(e) => { e.preventDefault(); onChange?.(!checked) }}
         className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-          checked ? 'bg-brand border-brand' : 'border-gray-300 bg-white'
+          checked ? 'bg-brand border-brand' : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-900'
         }`}
       >
         {checked && (

@@ -18,7 +18,7 @@ export default function DashboardLayout() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex fixed inset-y-0 left-0 w-60 z-40">
         <Sidebar />

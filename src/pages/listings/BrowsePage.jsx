@@ -57,7 +57,7 @@ function CategoryPill({ cat, active, onClick }) {
       className={`flex-shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-medium border transition-colors ${
         active
           ? 'bg-brand text-white border-brand'
-          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+          : 'bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
       }`}
     >
       <Icon size={13} />
@@ -71,7 +71,7 @@ function FiltersPanel({ filters, setFilters }) {
   return (
     <div className="space-y-6">
       <div>
-        <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider mb-3">Condition</h4>
+        <h4 className="text-xs font-semibold text-gray-800 dark:text-zinc-200 uppercase tracking-wider mb-3">Condition</h4>
         <div className="space-y-2">
           {CONDITIONS.map(({ key, label }) => (
             <Checkbox
@@ -85,7 +85,7 @@ function FiltersPanel({ filters, setFilters }) {
       </div>
 
       <div>
-        <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider mb-3">State</h4>
+        <h4 className="text-xs font-semibold text-gray-800 dark:text-zinc-200 uppercase tracking-wider mb-3">State</h4>
         <Select value={filters.state} onChange={(e) => update('state', e.target.value)}>
           <option value="">All states</option>
           {NIGERIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -93,7 +93,7 @@ function FiltersPanel({ filters, setFilters }) {
       </div>
 
       <div>
-        <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider mb-3">Price range</h4>
+        <h4 className="text-xs font-semibold text-gray-800 dark:text-zinc-200 uppercase tracking-wider mb-3">Price range</h4>
         <div className="flex items-center gap-2">
           <TextInput
             prefix="₦"
@@ -112,7 +112,7 @@ function FiltersPanel({ filters, setFilters }) {
       </div>
 
       <div>
-        <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider mb-3">Shipping</h4>
+        <h4 className="text-xs font-semibold text-gray-800 dark:text-zinc-200 uppercase tracking-wider mb-3">Shipping</h4>
         <div className="space-y-2">
           {SHIPPING_OPTIONS.map(({ key, label }) => (
             <Checkbox
@@ -181,20 +181,20 @@ export default function BrowsePage() {
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   return (
-    <div className="bg-gray-50 min-h-[calc(100vh-3.5rem)]">
+    <div className="bg-gray-50 dark:bg-zinc-950 min-h-[calc(100vh-3.5rem)]">
       {/* Mobile search (top of content, since navbar search is desktop-only) */}
-      <div className="lg:hidden bg-white border-b border-gray-100 px-4 py-3">
+      <div className="lg:hidden bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 px-4 py-3">
         <input
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search for anything…"
-          className="w-full h-9 px-3 text-sm rounded-lg bg-gray-50 border border-transparent focus:bg-white focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand/10 transition-colors"
+          className="w-full h-9 px-3 text-sm rounded-lg bg-gray-50 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 border border-transparent focus:bg-white dark:focus:bg-zinc-900 focus:border-gray-200 dark:focus:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand/10 transition-colors"
         />
       </div>
 
       {/* Categories — sticky just under navbar */}
-      <div className="bg-white border-b border-gray-100 sticky top-14 z-20">
+      <div className="bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 sticky top-14 z-20">
         <div className="px-4 lg:px-8 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
           {CATEGORIES.map((c) => (
             <CategoryPill
@@ -217,8 +217,8 @@ export default function BrowsePage() {
         <main className="flex-1 min-w-0">
           {/* Top row: count + filters/sort */}
           <div className="flex items-center justify-between mb-4">
-            <div className="text-xs text-gray-500">
-              <span className="font-semibold text-gray-900">{filtered.length}</span> items found
+            <div className="text-xs text-gray-500 dark:text-zinc-500">
+              <span className="font-semibold text-gray-900 dark:text-zinc-100">{filtered.length}</span> items found
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -243,11 +243,11 @@ export default function BrowsePage() {
             </div>
           ) : paged.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-16 px-6">
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-300 mb-3">
+              <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-300 dark:text-zinc-600 mb-3">
                 <Inbox size={24} />
               </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">No listings match your filters</h3>
-              <p className="text-xs text-gray-500 max-w-xs">Try removing some filters or searching for something else.</p>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-1">No listings match your filters</h3>
+              <p className="text-xs text-gray-500 dark:text-zinc-500 max-w-xs">Try removing some filters or searching for something else.</p>
               <Button
                 variant="secondary"
                 size="sm"
@@ -269,7 +269,7 @@ export default function BrowsePage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-40 inline-flex items-center justify-center"
+                className="w-8 h-8 rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-400 dark:text-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-40 inline-flex items-center justify-center"
               >
                 <ChevronLeft size={14} />
               </button>
@@ -280,7 +280,9 @@ export default function BrowsePage() {
                     key={n}
                     onClick={() => setPage(n)}
                     className={`w-8 h-8 rounded-lg text-xs font-medium inline-flex items-center justify-center ${
-                      page === n ? 'bg-brand text-white' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                      page === n
+                        ? 'bg-brand text-white'
+                        : 'border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800'
                     }`}
                   >
                     {n}
@@ -289,11 +291,13 @@ export default function BrowsePage() {
               })}
               {totalPages > 5 && (
                 <>
-                  <span className="text-xs text-gray-400 px-1">…</span>
+                  <span className="text-xs text-gray-400 dark:text-zinc-600 px-1">…</span>
                   <button
                     onClick={() => setPage(totalPages)}
                     className={`w-8 h-8 rounded-lg text-xs font-medium inline-flex items-center justify-center ${
-                      page === totalPages ? 'bg-brand text-white' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                      page === totalPages
+                        ? 'bg-brand text-white'
+                        : 'border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800'
                     }`}
                   >
                     {totalPages}
@@ -303,7 +307,7 @@ export default function BrowsePage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 inline-flex items-center justify-center"
+                className="w-8 h-8 rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-40 inline-flex items-center justify-center"
               >
                 <ChevronRight size={14} />
               </button>
@@ -316,10 +320,10 @@ export default function BrowsePage() {
       {drawerOpen && (
         <>
           <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setDrawerOpen(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto lg:hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white">
-              <h3 className="text-base font-semibold text-gray-900">Filters</h3>
-              <button onClick={() => setDrawerOpen(false)} className="text-gray-400 hover:text-gray-700">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 rounded-t-2xl max-h-[85vh] overflow-y-auto lg:hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Filters</h3>
+              <button onClick={() => setDrawerOpen(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200">
                 <X size={20} />
               </button>
             </div>
