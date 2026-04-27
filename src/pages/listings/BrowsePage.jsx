@@ -1,26 +1,28 @@
-import { useState, useRef, useMemo, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import {
-  Search, SlidersHorizontal, X,
   Zap, Tag, Home, Settings, Heart, BookOpen, Activity, Truck, Grid,
+  SlidersHorizontal, X, ChevronLeft, ChevronRight, Inbox,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import BrowseNav from '../../components/listings/BrowseNav.jsx'
-import BottomTabBar from '../../components/layout/BottomTabBar.jsx'
-import ListingCard from '../../components/listings/ListingCard.jsx'
-import { SkeletonCard } from '../../components/ui/Skeleton.jsx'
 import { getListings } from '../../api/endpoints.js'
 import { NIGERIAN_STATES } from '../../utils/constants.js'
+import ListingCard from '../../components/listings/ListingCard.jsx'
+import { SkeletonCard } from '../../components/ui/Skeleton.jsx'
+import Button from '../../components/ui/Button.jsx'
+import { TextInput, Select, Checkbox } from '../../components/ui/Field.jsx'
 
-const HERO_CATEGORIES = [
-  { key: 'Electronics',           label: 'Electronics', icon: Zap },
-  { key: 'Fashion & Accessories', label: 'Fashion',     icon: Tag },
-  { key: 'Furniture',             label: 'Furniture',   icon: Home },
-  { key: 'Home Appliances',       label: 'Appliances',  icon: Settings },
-  { key: 'Baby & Kids Items',     label: 'Baby & Kids', icon: Heart },
-  { key: 'Books & Media',         label: 'Books',       icon: BookOpen },
-  { key: 'Sports & Fitness',      label: 'Sports',      icon: Activity },
-  { key: 'Vehicles & Parts',      label: 'Vehicles',    icon: Truck },
-  { key: 'Others',                label: 'Others',      icon: Grid },
+const CATEGORIES = [
+  { id: '',                          label: 'All',         icon: Grid     },
+  { id: 'Electronics',               label: 'Electronics', icon: Zap      },
+  { id: 'Fashion & Accessories',     label: 'Fashion',     icon: Tag      },
+  { id: 'Furniture',                 label: 'Furniture',   icon: Home     },
+  { id: 'Home Appliances',           label: 'Appliances',  icon: Settings },
+  { id: 'Baby & Kids Items',         label: 'Baby & Kids', icon: Heart    },
+  { id: 'Books & Media',             label: 'Books',       icon: BookOpen },
+  { id: 'Sports & Fitness',          label: 'Sports',      icon: Activity },
+  { id: 'Vehicles & Parts',          label: 'Vehicles',    icon: Truck    },
+  { id: 'Others',                    label: 'Others',      icon: Grid     },
 ]
 
 const CONDITIONS = [
@@ -31,362 +33,303 @@ const CONDITIONS = [
 ]
 
 const SHIPPING_OPTIONS = [
-  { key: 'park_waybill',   field: 'shipping_park',         label: 'Park Waybill' },
-  { key: 'gig',            field: 'shipping_gig',          label: 'GIG Logistics' },
-  { key: 'bolt_indrive',   field: 'shipping_bolt_indrive', label: 'Bolt / InDrive' },
-  { key: 'local_pickup',   field: 'shipping_pickup',       label: 'Local Pickup' },
+  { key: 'park_waybill', field: 'shipping_park',         label: 'Park Waybill' },
+  { key: 'gig',          field: 'shipping_gig',          label: 'GIG Logistics' },
+  { key: 'bolt_indrive', field: 'shipping_bolt_indrive', label: 'Bolt / InDrive' },
+  { key: 'local_pickup', field: 'shipping_pickup',       label: 'Local Pickup' },
 ]
 
 const SORT_OPTIONS = [
-  { key: 'newest',      label: 'Newest First' },
-  { key: 'price_asc',  label: 'Price: Low → High' },
-  { key: 'price_desc', label: 'Price: High → Low' },
-  { key: 'most_viewed', label: 'Most Viewed' },
+  { key: 'newest',     label: 'Newest' },
+  { key: 'price_asc',  label: 'Price: Low to High' },
+  { key: 'price_desc', label: 'Price: High to Low' },
+  { key: 'most_viewed', label: 'Most viewed' },
 ]
 
 const EMPTY_FILTERS = { conditions: [], state: '', priceMin: '', priceMax: '', shipping: [] }
 const PER_PAGE = 12
 
-function FilterSidebar({ filters, setFilters, activeCategory, setActiveCategory }) {
-  const hasAny = filters.conditions.length || filters.state || filters.priceMin ||
-    filters.priceMax || filters.shipping.length || activeCategory
-
-  function toggleArr(key, val) {
-    setFilters((p) => ({
-      ...p,
-      [key]: p[key].includes(val) ? p[key].filter((x) => x !== val) : [...p[key], val],
-    }))
-  }
-
+function CategoryPill({ cat, active, onClick }) {
+  const Icon = cat.icon
   return (
-    <div className="w-56 flex-shrink-0">
-      <div className="flex items-center justify-between mb-5">
-        <span className="text-sm font-semibold text-gray-900">Filters</span>
-        {hasAny && (
-          <button
-            onClick={() => { setFilters(EMPTY_FILTERS); setActiveCategory('') }}
-            className="text-xs text-brand-600 hover:text-brand-700 transition-colors"
-          >
-            Clear all
-          </button>
-        )}
-      </div>
+    <button
+      onClick={onClick}
+      className={`flex-shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-medium border transition-colors ${
+        active
+          ? 'bg-brand text-white border-brand'
+          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+      }`}
+    >
+      <Icon size={13} />
+      {cat.label}
+    </button>
+  )
+}
 
-      <div className="mb-6">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Condition</p>
+function FiltersPanel({ filters, setFilters }) {
+  const update = (k, v) => setFilters({ ...filters, [k]: v })
+  return (
+    <div className="space-y-6">
+      <div>
+        <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider mb-3">Condition</h4>
         <div className="space-y-2">
           {CONDITIONS.map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-2.5 text-sm text-gray-600 cursor-pointer hover:text-gray-900 transition-colors">
-              <input
-                type="checkbox"
-                checked={filters.conditions.includes(key)}
-                onChange={() => toggleArr('conditions', key)}
-                className="w-3.5 h-3.5 accent-brand-600 rounded"
-              />
-              {label}
-            </label>
+            <Checkbox
+              key={key}
+              checked={filters.conditions.includes(key)}
+              label={label}
+              onChange={(v) => update('conditions', v ? [...filters.conditions, key] : filters.conditions.filter(x => x !== key))}
+            />
           ))}
         </div>
       </div>
 
-      <div className="mb-6">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">State</p>
-        <select
-          value={filters.state}
-          onChange={(e) => setFilters((p) => ({ ...p, state: e.target.value }))}
-          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:border-brand-500 transition-colors"
-        >
-          <option value="">All States</option>
+      <div>
+        <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider mb-3">State</h4>
+        <Select value={filters.state} onChange={(e) => update('state', e.target.value)}>
+          <option value="">All states</option>
           {NIGERIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+        </Select>
       </div>
 
-      <div className="mb-6">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Price Range (₦)</p>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <p className="text-[10px] text-gray-400 mb-1.5">Min</p>
-            <input
-              type="number"
-              placeholder="0"
-              value={filters.priceMin}
-              onChange={(e) => setFilters((p) => ({ ...p, priceMin: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:border-brand-500 transition-colors"
-            />
-          </div>
-          <div className="flex-1">
-            <p className="text-[10px] text-gray-400 mb-1.5">Max</p>
-            <input
-              type="number"
-              placeholder="Any"
-              value={filters.priceMax}
-              onChange={(e) => setFilters((p) => ({ ...p, priceMax: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:border-brand-500 transition-colors"
-            />
-          </div>
+      <div>
+        <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider mb-3">Price range</h4>
+        <div className="flex items-center gap-2">
+          <TextInput
+            prefix="₦"
+            placeholder="Min"
+            value={filters.priceMin}
+            onChange={(e) => update('priceMin', e.target.value.replace(/\D/g, ''))}
+          />
+          <span className="text-gray-400">–</span>
+          <TextInput
+            prefix="₦"
+            placeholder="Max"
+            value={filters.priceMax}
+            onChange={(e) => update('priceMax', e.target.value.replace(/\D/g, ''))}
+          />
         </div>
       </div>
 
-      <div className="mb-6">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Shipping</p>
+      <div>
+        <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider mb-3">Shipping</h4>
         <div className="space-y-2">
           {SHIPPING_OPTIONS.map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-2.5 text-sm text-gray-600 cursor-pointer hover:text-gray-900 transition-colors">
-              <input
-                type="checkbox"
-                checked={filters.shipping.includes(key)}
-                onChange={() => toggleArr('shipping', key)}
-                className="w-3.5 h-3.5 accent-brand-600 rounded"
-              />
-              {label}
-            </label>
+            <Checkbox
+              key={key}
+              checked={filters.shipping.includes(key)}
+              label={label}
+              onChange={(v) => update('shipping', v ? [...filters.shipping, key] : filters.shipping.filter(x => x !== key))}
+            />
           ))}
         </div>
       </div>
+
+      <Button variant="secondary" full onClick={() => setFilters(EMPTY_FILTERS)}>Clear filters</Button>
     </div>
   )
 }
 
 export default function BrowsePage() {
-  const [searchInput, setSearchInput] = useState('')
-  const [search, setSearch] = useState('')
-  const [activeCategory, setActiveCategory] = useState('')
-  const [sort, setSort] = useState('newest')
+  const ctx = useOutletContext() ?? {}
+  const search = ctx.search ?? ''
+  const setSearch = ctx.setSearch ?? (() => {})
+
+  const [category, setCategory] = useState('')
   const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [sort, setSort] = useState('newest')
   const [page, setPage] = useState(1)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const searchTimeout = useRef(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['listings'],
     queryFn: getListings,
   })
-  const allListings = data?.data || []
+  const all = data?.data || []
 
-  const handleSearchInput = useCallback((val) => {
-    setSearchInput(val)
-    clearTimeout(searchTimeout.current)
-    searchTimeout.current = setTimeout(() => { setSearch(val); setPage(1) }, 400)
-  }, [])
-
-  const handleSearchSubmit = () => { setSearch(searchInput); setPage(1) }
-
-  const handleCategory = (key) => {
-    setActiveCategory((prev) => prev === key ? '' : key)
-    setPage(1)
-  }
+  // Reset to page 1 whenever filters change
+  useEffect(() => { setPage(1) }, [search, category, filters, sort])
 
   const filtered = useMemo(() => {
-    let r = [...allListings]
+    let r = [...all]
     if (search) {
       const q = search.toLowerCase()
-      r = r.filter((l) => l.title.toLowerCase().includes(q) || l.description?.toLowerCase().includes(q))
+      r = r.filter((l) =>
+        l.title?.toLowerCase().includes(q) ||
+        l.description?.toLowerCase().includes(q),
+      )
     }
-    if (activeCategory) r = r.filter((l) => l.category === activeCategory)
+    if (category) r = r.filter((l) => l.category === category)
     if (filters.conditions.length) r = r.filter((l) => filters.conditions.includes(l.condition))
     if (filters.state) r = r.filter((l) => l.state === filters.state)
     if (filters.priceMin) r = r.filter((l) => l.price >= Number(filters.priceMin) * 100)
     if (filters.priceMax) r = r.filter((l) => l.price <= Number(filters.priceMax) * 100)
     if (filters.shipping.length) {
-      const fieldMap = { park_waybill: 'shipping_park', gig: 'shipping_gig', bolt_indrive: 'shipping_bolt_indrive', local_pickup: 'shipping_pickup' }
+      const fieldMap = Object.fromEntries(SHIPPING_OPTIONS.map((s) => [s.key, s.field]))
       r = r.filter((l) => filters.shipping.some((m) => l[fieldMap[m]]))
     }
     switch (sort) {
       case 'price_asc':   r.sort((a, b) => a.price - b.price); break
       case 'price_desc':  r.sort((a, b) => b.price - a.price); break
-      case 'most_viewed': r.sort((a, b) => b.views_count - a.views_count); break
+      case 'most_viewed': r.sort((a, b) => (b.views_count || 0) - (a.views_count || 0)); break
       default:            r.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     }
     return r
-  }, [allListings, search, activeCategory, filters, sort])
+  }, [all, search, category, filters, sort])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
-  const filterCount =
-    filters.conditions.length + Number(!!filters.state) +
-    Number(!!filters.priceMin) + Number(!!filters.priceMax) +
-    filters.shipping.length + Number(!!activeCategory)
-
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
-      <BrowseNav showSearch={false} />
-      <BottomTabBar />
+    <div className="bg-gray-50 min-h-[calc(100vh-3.5rem)]">
+      {/* Mobile search (top of content, since navbar search is desktop-only) */}
+      <div className="lg:hidden bg-white border-b border-gray-100 px-4 py-3">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search for anything…"
+          className="w-full h-9 px-3 text-sm rounded-lg bg-gray-50 border border-transparent focus:bg-white focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand/10 transition-colors"
+        />
+      </div>
 
-      {/* Search + categories bar */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-5">
-          {/* Search */}
-          <div className="flex items-center gap-2 max-w-xl">
-            <div className="relative flex-1">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => handleSearchInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
-                placeholder="Search listings…"
-                className="w-full h-10 pl-9 pr-3 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-brand-500 transition-colors"
-              />
-            </div>
-            <button
-              onClick={handleSearchSubmit}
-              className="h-10 px-5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-sm font-medium transition-colors shrink-0"
-            >
-              Search
-            </button>
-          </div>
-
-          {/* Category pills */}
-          <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
-            {HERO_CATEGORIES.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => handleCategory(key)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm border rounded-full whitespace-nowrap transition-colors shrink-0 ${
-                  activeCategory === key
-                    ? 'border-brand-500 text-brand-600 bg-brand-50 font-medium'
-                    : 'border-gray-200 text-gray-600 bg-white hover:border-gray-300 hover:text-gray-900'
-                }`}
-              >
-                <Icon size={13} className="shrink-0" />
-                {label}
-              </button>
-            ))}
-          </div>
+      {/* Categories — sticky just under navbar */}
+      <div className="bg-white border-b border-gray-100 sticky top-14 z-20">
+        <div className="px-4 lg:px-8 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
+          {CATEGORIES.map((c) => (
+            <CategoryPill
+              key={c.id || 'all'}
+              cat={c}
+              active={category === c.id}
+              onClick={() => setCategory(c.id)}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex gap-8 items-start">
+      <div className="px-4 lg:px-8 py-6 flex gap-6">
+        {/* Desktop filter sidebar */}
+        <aside className="hidden lg:block w-56 shrink-0">
+          <FiltersPanel filters={filters} setFilters={setFilters} />
+        </aside>
 
-          {/* Filter sidebar — desktop */}
-          <aside className="hidden lg:block sticky top-6">
-            <FilterSidebar
-              filters={filters}
-              setFilters={(f) => { setFilters(f); setPage(1) }}
-              activeCategory={activeCategory}
-              setActiveCategory={(c) => { setActiveCategory(c); setPage(1) }}
-            />
-          </aside>
-
-          {/* Listing grid */}
-          <div className="flex-1 min-w-0">
-            {/* Top bar */}
-            <div className="flex items-center justify-between mb-5">
-              <span className="text-sm text-gray-500">
-                <span className="font-semibold text-gray-900">{filtered.length}</span> items found
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setDrawerOpen(true)}
-                  className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-600 hover:border-gray-300 bg-white transition-colors"
-                >
-                  <SlidersHorizontal size={14} />
-                  Filters
-                  {filterCount > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-brand-500 text-white text-[10px] font-bold flex items-center justify-center">
-                      {filterCount}
-                    </span>
-                  )}
-                </button>
-
-                <select
-                  value={sort}
-                  onChange={(e) => { setSort(e.target.value); setPage(1) }}
-                  className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 bg-white focus:outline-none focus:border-brand-500 cursor-pointer transition-colors"
-                >
-                  {SORT_OPTIONS.map(({ key, label }) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-              </div>
+        {/* Main */}
+        <main className="flex-1 min-w-0">
+          {/* Top row: count + filters/sort */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-xs text-gray-500">
+              <span className="font-semibold text-gray-900">{filtered.length}</span> items found
             </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={SlidersHorizontal}
+                onClick={() => setDrawerOpen(true)}
+                className="lg:hidden"
+              >
+                Filters
+              </Button>
+              <Select value={sort} onChange={(e) => setSort(e.target.value)} className="!h-8 !text-xs !w-auto pr-8">
+                {SORT_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+              </Select>
+            </div>
+          </div>
 
-            {isLoading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          {/* Grid */}
+          {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : paged.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-16 px-6">
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-300 mb-3">
+                <Inbox size={24} />
               </div>
-            ) : paged.length === 0 ? (
-              <div className="py-20 text-center">
-                <p className="text-gray-400 text-sm mb-3">No listings found</p>
-                <button
-                  onClick={() => { setFilters(EMPTY_FILTERS); setSearch(''); setSearchInput(''); setActiveCategory('') }}
-                  className="text-sm text-brand-600 hover:text-brand-700 transition-colors"
-                >
-                  Clear all filters
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                {paged.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
-                ))}
-              </div>
-            )}
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">No listings match your filters</h3>
+              <p className="text-xs text-gray-500 max-w-xs">Try removing some filters or searching for something else.</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-4"
+                onClick={() => { setFilters(EMPTY_FILTERS); setSearch(''); setCategory('') }}
+              >
+                Clear all filters
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {paged.map((listing) => <ListingCard key={listing.id} listing={listing} />)}
+            </div>
+          )}
 
-            {totalPages > 1 && (
-              <div className="mt-8 flex justify-center gap-1.5">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white hover:border-brand-500 hover:text-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  ← Prev
-                </button>
-                {Array.from({ length: totalPages }).map((_, i) => (
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-1.5">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-40 inline-flex items-center justify-center"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                const n = i + 1
+                return (
                   <button
-                    key={i}
-                    onClick={() => setPage(i + 1)}
-                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                      page === i + 1
-                        ? 'bg-brand-500 text-white'
-                        : 'border border-gray-200 bg-white text-gray-600 hover:border-brand-500 hover:text-brand-600'
+                    key={n}
+                    onClick={() => setPage(n)}
+                    className={`w-8 h-8 rounded-lg text-xs font-medium inline-flex items-center justify-center ${
+                      page === n ? 'bg-brand text-white' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    {i + 1}
+                    {n}
                   </button>
-                ))}
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white hover:border-brand-500 hover:text-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next →
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+                )
+              })}
+              {totalPages > 5 && (
+                <>
+                  <span className="text-xs text-gray-400 px-1">…</span>
+                  <button
+                    onClick={() => setPage(totalPages)}
+                    className={`w-8 h-8 rounded-lg text-xs font-medium inline-flex items-center justify-center ${
+                      page === totalPages ? 'bg-brand text-white' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 inline-flex items-center justify-center"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
+        </main>
       </div>
 
       {/* Mobile filter drawer */}
       {drawerOpen && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] lg:hidden" onClick={() => setDrawerOpen(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl lg:hidden max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <p className="text-base font-semibold text-gray-900">Filters</p>
-              <button onClick={() => setDrawerOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setDrawerOpen(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto lg:hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white">
+              <h3 className="text-base font-semibold text-gray-900">Filters</h3>
+              <button onClick={() => setDrawerOpen(false)} className="text-gray-400 hover:text-gray-700">
                 <X size={20} />
               </button>
             </div>
             <div className="p-5">
-              <FilterSidebar
-                filters={filters}
-                setFilters={(f) => { setFilters(f); setPage(1) }}
-                activeCategory={activeCategory}
-                setActiveCategory={(c) => { setActiveCategory(c); setPage(1); setDrawerOpen(false) }}
-              />
+              <FiltersPanel filters={filters} setFilters={setFilters} />
+              <Button full className="mt-4" onClick={() => setDrawerOpen(false)}>Apply filters</Button>
             </div>
           </div>
         </>
       )}
-
-      <footer className="border-t border-gray-100 py-6 text-center text-sm text-gray-400">
-        © 2026 PayClutr · Sustainable commerce for Nigeria
-      </footer>
     </div>
   )
 }

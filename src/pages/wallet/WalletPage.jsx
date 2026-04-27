@@ -68,11 +68,13 @@ function DepositAccountCard() {
     queryFn: getDepositAccount,
   })
 
+  const [pending, setPending] = useState(false)
+
   const mutation = useMutation({
     mutationFn: setupDepositAccount,
     onSuccess: () => {
-      qc.invalidateQueries(['deposit-account'])
-      showToast('Deposit account created successfully!', 'success')
+      setPending(true)
+      showToast('BVN submitted. Your deposit account will be ready shortly.', 'success')
     },
     onError: (err) => {
       const msg = err?.response?.data?.detail ?? 'Setup failed. Please try again.'
@@ -97,6 +99,26 @@ function DepositAccountCard() {
   }
 
   if (isLoading) return null
+
+  if (pending) {
+    return (
+      <div className="bg-white border border-gray-100 rounded-xl p-5 mb-6">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Deposit Account</p>
+        <div className="flex items-center gap-3 py-3">
+          <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+            <svg className="animate-spin h-4 w-4 text-brand-500" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-800">Verifying your BVN…</p>
+            <p className="text-xs text-gray-400 mt-0.5">Your deposit account will appear here once verified. This usually takes a few minutes.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (account?.account_number) {
     return (

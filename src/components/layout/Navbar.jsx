@@ -1,33 +1,62 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Bell, Menu, ShieldCheck, ChevronDown, LogOut, User } from 'lucide-react'
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import {
+  Bell, Menu, ChevronDown, LogOut, User, Search, Plus, Package, Wallet, ShieldCheck,
+} from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getUnreadCount, getNotifications, markAllRead } from '../../api/endpoints.js'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useToast } from '../ui/Toast.jsx'
 import UserAvatar from '../ui/UserAvatar.jsx'
+import Logo from '../ui/Logo.jsx'
+import Button from '../ui/Button.jsx'
 import { formatTimeAgo } from '../../utils/formatters.js'
 
-export default function Navbar({ onMenuToggle, title = '' }) {
+const TITLES = {
+  '/browse':            'Browse',
+  '/listings/my':       'My listings',
+  '/listings/create':   'List an item',
+  '/orders':            'My orders',
+  '/wallet':            'Wallet',
+  '/profile':           'Profile',
+  '/kyc':               'Identity verification',
+  '/notifications':     'Notifications',
+}
+
+function pageTitle(path) {
+  if (TITLES[path]) return TITLES[path]
+  if (path.startsWith('/listings/') && path.endsWith('/edit')) return 'Edit listing'
+  if (path.startsWith('/listings/')) return 'Item details'
+  if (path.startsWith('/orders/')) return 'Order details'
+  if (path.startsWith('/profile/')) return 'Profile'
+  if (path.startsWith('/disputes/')) return 'Dispute'
+  return ''
+}
+
+export default function Navbar({ onMenuToggle, search, onSearchChange }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const { showToast } = useToast()
   const [notifOpen, setNotifOpen] = useState(false)
   const [userOpen, setUserOpen]   = useState(false)
   const notifRef = useRef(null)
   const userRef  = useRef(null)
   const qc = useQueryClient()
 
+  const isBrowse = location.pathname === '/browse'
+
   const { data: unread } = useQuery({
     queryKey: ['notifications', 'unread'],
     queryFn: getUnreadCount,
     refetchInterval: 60000,
+    enabled: !!user,
   })
-
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
     queryFn: getNotifications,
-    enabled: notifOpen,
+    enabled: notifOpen && !!user,
   })
-
   const markAllMutation = useMutation({
     mutationFn: markAllRead,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
@@ -44,65 +73,111 @@ export default function Navbar({ onMenuToggle, title = '' }) {
 
   const unreadCount = unread?.count || 0
 
+  const handleSell = (e) => {
+    if (!user) return // let it navigate to /login
+    const status = user.kyc_status
+    if (status === 'verified') return
+    e.preventDefault()
+    if (status === 'pending') {
+      showToast('Your identity verification is under review. You can sell once approved.', 'error')
+    } else {
+      const msg = status === 'rejected'
+        ? 'Your KYC was rejected. Please resubmit your documents.'
+        : 'Please complete identity verification before selling.'
+      showToast(msg, 'error')
+      navigate('/kyc')
+    }
+  }
+
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-60 h-14 bg-white border-b border-gray-100 z-40 flex items-center px-4 gap-3">
+    <header className="fixed top-0 right-0 left-0 lg:left-60 h-14 bg-white border-b border-gray-100 z-30 flex items-center px-4 lg:px-6 gap-3">
+      {/* Mobile: hamburger + logo */}
       <button
         onClick={onMenuToggle}
-        className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+        className="lg:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
+        aria-label="Open menu"
       >
-        <Menu size={19} />
+        <Menu size={20} />
       </button>
-
-      <Link to="/browse" className="lg:hidden flex items-center gap-1.5">
-        <div className="w-6 h-6 bg-brand-500 rounded-md flex items-center justify-center">
-          <ShieldCheck size={13} className="text-white" />
-        </div>
-        <span className="font-bold text-gray-900 text-sm">PayClutr</span>
+      <Link to="/browse" className="lg:hidden">
+        <Logo size="sm" />
       </Link>
 
-      {title && (
-        <h1 className="hidden lg:block text-sm font-semibold text-gray-900">{title}</h1>
+      {/* Desktop: page title */}
+      <h2 className="hidden lg:block text-sm font-semibold text-gray-900 shrink-0">
+        {pageTitle(location.pathname)}
+      </h2>
+
+      {/* Desktop search (browse only) */}
+      {isBrowse && (
+        <div className="hidden lg:block ml-4 flex-1 max-w-md">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="search"
+              value={search ?? ''}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              placeholder="Search for anything…"
+              className="w-full h-9 pl-9 pr-3 text-sm rounded-lg bg-gray-50 border border-transparent focus:bg-white focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand/10 transition-colors"
+            />
+          </div>
+        </div>
       )}
 
       <div className="flex-1" />
 
-      {/* Notification bell */}
+      {/* List item CTA — visible on all sizes */}
+      <Link
+        to={user ? '/listings/create' : '/login'}
+        onClick={handleSell}
+        className="hidden sm:inline-flex"
+      >
+        <Button size="sm" icon={Plus}>List item</Button>
+      </Link>
+      <Link
+        to={user ? '/listings/create' : '/login'}
+        onClick={handleSell}
+        className="sm:hidden p-1.5 rounded-lg bg-brand text-white hover:bg-[color:var(--brand-700)] transition-colors"
+        aria-label="List item"
+      >
+        <Plus size={18} />
+      </Link>
+
+      {/* Notifications */}
       <div className="relative" ref={notifRef}>
         <button
           onClick={() => { setNotifOpen((o) => !o); setUserOpen(false) }}
-          className="relative p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+          className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
+          aria-label="Notifications"
         >
-          <Bell size={18} />
+          <Bell size={17} />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-brand-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-brand" />
           )}
         </button>
-
-        {notifOpen && (
-          <div className="absolute right-0 top-11 w-72 bg-white rounded-xl shadow-modal border border-gray-100 z-50 overflow-hidden animate-fade-in">
+        {notifOpen && user && (
+          <div className="absolute right-0 top-11 w-80 bg-white rounded-xl shadow-modal border border-gray-100 z-50 overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <span className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Notifications</span>
               {unreadCount > 0 && (
-                <button onClick={() => markAllMutation.mutate()} className="text-xs text-brand-500 hover:text-brand-600 font-medium">
+                <button onClick={() => markAllMutation.mutate()} className="text-xs text-brand hover:opacity-80 font-medium">
                   Mark all read
                 </button>
               )}
             </div>
-            <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+            <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
               {notifications.length === 0 ? (
                 <p className="text-xs text-gray-400 text-center py-8">No notifications yet</p>
               ) : (
-                notifications.slice(0, 5).map((n) => (
+                notifications.slice(0, 6).map((n) => (
                   <Link
                     key={n.id}
                     to={n.link || '/notifications'}
                     onClick={() => setNotifOpen(false)}
-                    className={`flex gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${!n.is_read ? 'bg-brand-50/40' : ''}`}
+                    className={`flex gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${!n.is_read ? 'bg-orange-50/40' : ''}`}
                   >
-                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${!n.is_read ? 'bg-brand-500' : 'bg-transparent'}`} />
-                    <div className="min-w-0">
+                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${!n.is_read ? 'bg-brand' : 'bg-transparent'}`} />
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-medium text-gray-800 truncate">{n.title}</p>
                       <p className="text-xs text-gray-400 mt-0.5 truncate">{n.message}</p>
                       <p className="text-[10px] text-gray-300 mt-0.5">{formatTimeAgo(n.created_at)}</p>
@@ -114,7 +189,7 @@ export default function Navbar({ onMenuToggle, title = '' }) {
             <Link
               to="/notifications"
               onClick={() => setNotifOpen(false)}
-              className="block text-center text-xs font-medium text-brand-500 hover:text-brand-600 py-3 border-t border-gray-100"
+              className="block text-center text-xs font-medium text-brand hover:opacity-80 py-3 border-t border-gray-100"
             >
               View all
             </Link>
@@ -122,48 +197,54 @@ export default function Navbar({ onMenuToggle, title = '' }) {
         )}
       </div>
 
-      {/* User dropdown */}
-      <div className="relative" ref={userRef}>
-        <button
-          onClick={() => { setUserOpen((o) => !o); setNotifOpen(false) }}
-          className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <UserAvatar user={user} size="sm" />
-          <span className="hidden sm:block text-xs font-medium text-gray-700 max-w-[100px] truncate">
-            {user?.first_name}
-          </span>
-          <ChevronDown size={13} className="text-gray-400 hidden sm:block" />
-        </button>
-
-        {userOpen && (
-          <div className="absolute right-0 top-11 w-44 bg-white rounded-xl shadow-modal border border-gray-100 z-50 py-1 animate-fade-in">
-            <Link
-              to={`/profile/${user?.id}`}
-              onClick={() => setUserOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <User size={13} className="text-gray-400" />
-              My Profile
-            </Link>
-            <Link
-              to="/notifications"
-              onClick={() => setUserOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <Bell size={13} className="text-gray-400" />
-              Notifications
-            </Link>
-            <div className="border-t border-gray-100 my-1" />
-            <button
-              onClick={() => { logout(); navigate('/login') }}
-              className="flex items-center gap-2.5 w-full px-3 py-2 text-xs text-red-500 hover:bg-red-50 transition-colors"
-            >
-              <LogOut size={13} />
-              Log out
-            </button>
-          </div>
-        )}
-      </div>
+      {/* User dropdown / Login */}
+      {user ? (
+        <div className="relative" ref={userRef}>
+          <button
+            onClick={() => { setUserOpen((o) => !o); setNotifOpen(false) }}
+            className="flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <UserAvatar user={user} size="sm" />
+            <ChevronDown size={13} className="text-gray-400 hidden sm:block" />
+          </button>
+          {userOpen && (
+            <div className="absolute right-0 top-11 w-52 bg-white rounded-xl shadow-modal border border-gray-100 z-50 py-1">
+              <div className="px-3 py-2.5 border-b border-gray-100">
+                <p className="text-xs font-semibold text-gray-900 truncate">{user.first_name} {user.last_name}</p>
+                <p className="text-[10px] text-gray-400 truncate mt-0.5">{user.email}</p>
+              </div>
+              {[
+                { to: `/profile/${user.id}`, icon: User,        label: 'My profile' },
+                { to: '/orders',             icon: Package,     label: 'My orders' },
+                { to: '/wallet',             icon: Wallet,      label: 'Wallet' },
+                { to: '/kyc',                icon: ShieldCheck, label: 'Identity' },
+              ].map(({ to, icon: Icon, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setUserOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Icon size={13} className="text-gray-400" />
+                  {label}
+                </Link>
+              ))}
+              <div className="border-t border-gray-100 my-1" />
+              <button
+                onClick={() => { logout(); navigate('/login') }}
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-xs text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <LogOut size={13} />
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Link to="/login" className="text-xs font-medium text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+          Sign in
+        </Link>
+      )}
     </header>
   )
 }

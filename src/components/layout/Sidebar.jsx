@@ -1,103 +1,112 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import { Search, Tag, ShoppingBag, Wallet, PlusCircle, LogOut, ShieldCheck } from 'lucide-react'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import {
+  Search, Tag, Package, Wallet, ShieldCheck, User, Bell, LogOut, LogIn,
+  LayoutDashboard, ArrowDownToLine, Users,
+} from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
-import { useToast } from '../ui/Toast.jsx'
+import Logo from '../ui/Logo.jsx'
 import UserAvatar from '../ui/UserAvatar.jsx'
 
-const navItems = [
-  { to: '/browse',      icon: Search,      label: 'Browse' },
-  { to: '/listings/my', icon: Tag,         label: 'My Listings' },
-  { to: '/orders',      icon: ShoppingBag, label: 'My Orders' },
-  { to: '/wallet',      icon: Wallet,      label: 'Wallet' },
-]
+function NavItem({ to, icon: Icon, label, badge, onClick }) {
+  return (
+    <NavLink
+      to={to}
+      onClick={onClick}
+      className={({ isActive }) =>
+        `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors relative ${
+          isActive
+            ? 'text-brand'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-brand rounded-r" />}
+          <Icon size={16} />
+          <span>{label}</span>
+          {badge ? (
+            <span className="ml-auto text-[10px] bg-brand text-white px-1.5 py-0.5 rounded-full">{badge}</span>
+          ) : null}
+        </>
+      )}
+    </NavLink>
+  )
+}
 
 export default function Sidebar({ onClose }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const { showToast } = useToast()
+  const location = useLocation()
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = () => { logout(); navigate('/login') }
+  const handleClick = () => onClose?.()
 
-  const handleSell = (e) => {
-    const status = user?.kyc_status
-    if (status === 'verified') return
-    e.preventDefault()
-    if (status === 'pending') {
-      showToast('Your identity verification is under review. You can sell once approved.', 'error')
-      onClose?.()
-    } else {
-      const msg = status === 'rejected'
-        ? 'Your KYC was rejected. Please resubmit your documents.'
-        : 'Please complete identity verification before selling.'
-      showToast(msg, 'error')
-      navigate('/kyc')
-      onClose?.()
-    }
-  }
+  const isAdminArea = location.pathname.startsWith('/admin')
+  const isAdmin = user?.is_staff || user?.role === 'admin'
 
   return (
     <aside className="flex flex-col h-full w-60 bg-white border-r border-gray-100">
-      {/* Logo */}
-      <div className="px-5 h-14 flex items-center shrink-0">
-        <NavLink to="/browse" onClick={onClose} className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-brand-500 rounded-lg flex items-center justify-center">
-            <ShieldCheck size={15} className="text-white" />
-          </div>
-          <span className="text-base font-bold text-gray-900 tracking-tight">PayClutr</span>
-        </NavLink>
-      </div>
-
-      {/* Sell CTA */}
-      <div className="px-4 pb-4 shrink-0">
-        <NavLink to="/listings/create" onClick={handleSell} className="btn-primary w-full justify-center text-xs py-2">
-          <PlusCircle size={14} />
-          Sell an Item
+      {/* Brand */}
+      <div className="px-5 h-14 flex items-center border-b border-gray-100 shrink-0">
+        <NavLink to="/browse" onClick={handleClick}>
+          <Logo size="md" />
         </NavLink>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100 ${
-                isActive
-                  ? 'bg-brand-50 text-brand-600'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-              }`
-            }
-          >
-            <Icon size={16} />
-            {label}
-          </NavLink>
-        ))}
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+        <NavItem to="/browse"      icon={Search}      label="Browse"        onClick={handleClick} />
+        {user && (
+          <>
+            <NavItem to="/listings/my" icon={Tag}         label="My listings"   onClick={handleClick} />
+            <NavItem to="/orders"      icon={Package}     label="Orders"        onClick={handleClick} />
+            <NavItem to="/wallet"      icon={Wallet}      label="Wallet"        onClick={handleClick} />
+            <NavItem to={`/profile/${user.id}`} icon={User} label="Profile"     onClick={handleClick} />
+            <NavItem to="/kyc"         icon={ShieldCheck} label="KYC"           onClick={handleClick} />
+            <NavItem to="/notifications" icon={Bell}      label="Notifications" onClick={handleClick} />
+          </>
+        )}
+
+        {isAdmin && (
+          <>
+            <div className="my-3 border-t border-gray-100" />
+            <div className="px-3 text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Admin</div>
+            <NavItem to="/admin"             icon={LayoutDashboard} label="Dashboard"   onClick={handleClick} />
+            <NavItem to="/admin/kyc"         icon={ShieldCheck}     label="KYC review"  onClick={handleClick} />
+            <NavItem to="/admin/withdrawals" icon={ArrowDownToLine} label="Withdrawals" onClick={handleClick} />
+            <NavItem to="/admin/users"       icon={Users}           label="Users"       onClick={handleClick} />
+          </>
+        )}
       </nav>
 
-      {/* User footer */}
-      <div className="px-3 py-3 border-t border-gray-100 shrink-0 space-y-1">
-        <NavLink
-          to={`/profile/${user?.id}`}
-          onClick={onClose}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <UserAvatar user={user} size="sm" />
-          <p className="text-sm font-medium text-gray-700 truncate">
-            {user?.first_name} {user?.last_name}
-          </p>
-        </NavLink>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-        >
-          <LogOut size={15} />
-          Log out
-        </button>
+      {/* Footer */}
+      <div className="p-3 border-t border-gray-100 shrink-0">
+        {user ? (
+          <div className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50">
+            <UserAvatar user={user} size="sm" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-900 truncate">{user.first_name} {user.last_name}</div>
+              <div className="text-[11px] text-gray-500 truncate">@{user.email?.split('@')[0]}</div>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Log out"
+              className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors"
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
+        ) : (
+          <NavLink
+            to="/login"
+            onClick={handleClick}
+            className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700"
+          >
+            <LogIn size={16} className="text-gray-500" />
+            Sign in
+          </NavLink>
+        )}
       </div>
     </aside>
   )

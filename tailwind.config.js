@@ -24,6 +24,7 @@ export default {
           900: '#501803',
         },
         brand: {
+          DEFAULT: '#E8470A',
           50:  '#FEF0EB',
           100: '#FDD8CC',
           200: '#FAB199',

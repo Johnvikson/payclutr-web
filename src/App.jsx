@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AuthLayout from './components/layout/AuthLayout.jsx'
 import DashboardLayout from './components/layout/DashboardLayout.jsx'
 import AdminLayout from './components/layout/AdminLayout.jsx'
+import RequireAuth from './components/auth/RequireAuth.jsx'
 
 import LoginPage from './pages/auth/LoginPage.jsx'
 import RegisterPage from './pages/auth/RegisterPage.jsx'
@@ -61,23 +62,24 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
 
-        {/* Public routes (no layout wrapper) */}
-        <Route path="/browse" element={<BrowsePage />} />
-        <Route path="/listings/:id" element={<ListingDetailPage />} />
-        <Route path="/profile/:id" element={<ProfilePage />} />
-
-        {/* Dashboard routes */}
+        {/* Dashboard layout — public + protected pages share the shell */}
         <Route element={<DashboardLayout />}>
+          {/* Public */}
+          <Route path="/browse" element={<BrowsePage />} />
+          <Route path="/listings/:id" element={<ListingDetailPage />} />
+          <Route path="/profile/:id" element={<ProfilePage />} />
+
+          {/* Protected */}
           <Route path="/home" element={<Navigate to="/browse" replace />} />
-          <Route path="/kyc" element={<KycPage />} />
-          <Route path="/listings/create" element={<CreateListingPage />} />
-          <Route path="/listings/:id/edit" element={<CreateListingPage />} />
-          <Route path="/listings/my" element={<MyListingsPage />} />
-          <Route path="/orders" element={<MyOrdersPage />} />
-          <Route path="/orders/:id" element={<OrderDetailPage />} />
-          <Route path="/disputes/:id" element={<DisputeDetailPage />} />
-          <Route path="/wallet" element={<WalletPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/kyc"               element={<RequireAuth><KycPage /></RequireAuth>} />
+          <Route path="/listings/create"   element={<RequireAuth><CreateListingPage /></RequireAuth>} />
+          <Route path="/listings/:id/edit" element={<RequireAuth><CreateListingPage /></RequireAuth>} />
+          <Route path="/listings/my"       element={<RequireAuth><MyListingsPage /></RequireAuth>} />
+          <Route path="/orders"            element={<RequireAuth><MyOrdersPage /></RequireAuth>} />
+          <Route path="/orders/:id"        element={<RequireAuth><OrderDetailPage /></RequireAuth>} />
+          <Route path="/disputes/:id"      element={<RequireAuth><DisputeDetailPage /></RequireAuth>} />
+          <Route path="/wallet"            element={<RequireAuth><WalletPage /></RequireAuth>} />
+          <Route path="/notifications"     element={<RequireAuth><NotificationsPage /></RequireAuth>} />
         </Route>
 
         {/* Admin routes */}
