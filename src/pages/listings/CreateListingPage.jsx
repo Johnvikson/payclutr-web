@@ -216,8 +216,13 @@ export default function CreateListingPage() {
       const result = isEditing
         ? await updateListing(id, payload)
         : await createListing(payload)
-      showToast(isEditing ? 'Listing updated' : 'Listing published', 'success')
-      navigate(`/listings/${result.id || id}`)
+      if (isEditing) {
+        showToast('Listing updated', 'success')
+        navigate(`/listings/${result.id || id}`)
+      } else {
+        showToast('Listing submitted for review. We\'ll notify you once it\'s approved.', 'success')
+        navigate('/listings/my')
+      }
     } catch (err) {
       const msg = err?.detail ?? err?.message ?? 'Failed to publish. Please try again.'
       showToast(msg, 'error')

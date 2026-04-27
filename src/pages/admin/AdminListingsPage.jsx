@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search } from 'lucide-react'
-import { getAdminListings, adminDelistListing } from '../../api/endpoints.js'
+import { Search, Check, X } from 'lucide-react'
+import {
+  getAdminListings, adminDelistListing, adminApproveListing, adminRejectListing,
+} from '../../api/endpoints.js'
 import { formatNaira, formatDate, formatCondition } from '../../utils/formatters.js'
 import StatusBadge from '../../components/ui/StatusBadge.jsx'
 import UserAvatar from '../../components/ui/UserAvatar.jsx'
@@ -22,10 +24,11 @@ const CATEGORIES = [
 ]
 
 const STATUSES = [
-  { value: '', label: 'All Statuses' },
-  { value: 'active', label: 'Active' },
-  { value: 'sold', label: 'Sold' },
-  { value: 'delisted', label: 'Removed' },
+  { value: '',               label: 'All Statuses'   },
+  { value: 'pending_review', label: 'Pending Review' },
+  { value: 'active',         label: 'Active'         },
+  { value: 'sold',           label: 'Sold'           },
+  { value: 'delisted',       label: 'Removed'        },
 ]
 
 export default function AdminListingsPage() {
@@ -53,14 +56,47 @@ export default function AdminListingsPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-listings'] })
       showToast('Listing delisted', 'success')
     },
-    onError: () => {
-      showToast('Failed to delist listing', 'error')
+    onError: (err) => {
+      showToast(err?.detail ?? 'Failed to delist listing', 'error')
+    },
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: (id) => adminApproveListing(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-listings'] })
+      showToast('Listing approved — now live', 'success')
+    },
+    onError: (err) => {
+      showToast(err?.detail ?? 'Failed to approve listing', 'error')
+    },
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, reason }) => adminRejectListing(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-listings'] })
+      showToast('Listing rejected', 'success')
+    },
+    onError: (err) => {
+      showToast(err?.detail ?? 'Failed to reject listing', 'error')
     },
   })
 
   function handleDelist(e, id) {
     e.stopPropagation()
     delistMutation.mutate(id)
+  }
+
+  function handleApprove(e, id) {
+    e.stopPropagation()
+    approveMutation.mutate(id)
+  }
+
+  function handleReject(e, id) {
+    e.stopPropagation()
+    const reason = window.prompt('Reason for rejection (optional, shown to seller):') ?? ''
+    rejectMutation.mutate({ id, reason: reason.trim() })
   }
 
   return (
@@ -187,15 +223,35 @@ export default function AdminListingsPage() {
 
                   {/* Actions */}
                   <td className="px-4 py-3">
-                    {listing.status === 'active' && (
-                      <button
-                        onClick={(e) => handleDelist(e, listing.id)}
-                        disabled={delistMutation.isPending}
-                        className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-40 whitespace-nowrap"
-                      >
-                        Delist
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {listing.status === 'pending_review' && (
+                        <>
+                          <button
+                            onClick={(e) => handleApprove(e, listing.id)}
+                            disabled={approveMutation.isPending}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-40 whitespace-nowrap"
+                          >
+                            <Check size={12} /> Approve
+                          </button>
+                          <button
+                            onClick={(e) => handleReject(e, listing.id)}
+                            disabled={rejectMutation.isPending}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-40 whitespace-nowrap"
+                          >
+                            <X size={12} /> Reject
+                          </button>
+                        </>
+                      )}
+                      {listing.status === 'active' && (
+                        <button
+                          onClick={(e) => handleDelist(e, listing.id)}
+                          disabled={delistMutation.isPending}
+                          className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-40 whitespace-nowrap"
+                        >
+                          Delist
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

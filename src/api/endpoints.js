@@ -102,7 +102,9 @@ export const getAdminListings = (filters = {}) => {
   const params = new URLSearchParams(filters).toString()
   return client.get(`/listings/admin/?${params}`)
 }
-export const adminDelistListing = (id) => client.post(`/listings/admin/${id}/delist/`)
+export const adminDelistListing  = (id)         => client.post(`/listings/admin/${id}/delist/`)
+export const adminApproveListing = (id)         => client.post(`/listings/admin/${id}/approve/`)
+export const adminRejectListing  = (id, reason) => client.post(`/listings/admin/${id}/reject/`, { reason })
 
 // ── Admin — Orders ────────────────────────────────────────────────────────────
 export const getAdminOrders = (filters = {}) => {
