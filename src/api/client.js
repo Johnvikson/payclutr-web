@@ -26,7 +26,22 @@ client.interceptors.response.use(
       localStorage.removeItem('payclutr_user')
       window.location.href = '/login'
     }
-    return Promise.reject(error.response?.data || error)
+
+    // Normalize the rejected value so BOTH access patterns work:
+    //   err.detail              (top-level — preferred)
+    //   err.response.data.detail (axios-classic)
+    //   err.message             (network / unknown errors)
+    const body = error.response?.data
+    if (body && typeof body === 'object') {
+      const enhanced = {
+        ...body,
+        response: { data: body, status: error.response?.status },
+        status:   error.response?.status,
+        message:  body.detail || body.message || error.message,
+      }
+      return Promise.reject(enhanced)
+    }
+    return Promise.reject(error)
   }
 )
 

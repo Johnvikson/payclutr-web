@@ -41,7 +41,13 @@ function DepositAccount() {
       qc.invalidateQueries({ queryKey: ['deposit-account'] })
     },
     onError: (err) => {
-      const msg = err?.response?.data?.detail ?? 'Setup failed. Please try again.'
+      // Note: client.js interceptor already unwraps to error.response.data,
+      // so the rejected value IS the body ({ detail: '...' }) — not an axios error.
+      const msg =
+        err?.detail ??
+        err?.response?.data?.detail ??
+        err?.message ??
+        'Setup failed. Please try again.'
       showToast(msg, 'error')
     },
   })
