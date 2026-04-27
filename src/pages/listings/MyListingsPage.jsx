@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus, Pencil, Trash2, RotateCcw, Package, MoreVertical, Eye,
@@ -229,10 +229,20 @@ function TableRow({ listing, tab, onEdit, onDelist, onRelist }) {
 }
 
 // ─── Page ───────────────────────────────────────────────────────────────────
+const VALID_TABS = new Set(['active', 'sold', 'pending_review', 'delisted'])
+
 export default function MyListingsPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const [activeTab, setActiveTab] = useState('active')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const initialTab = VALID_TABS.has(searchParams.get('tab')) ? searchParams.get('tab') : 'active'
+  const [activeTab, setActiveTabState] = useState(initialTab)
+  const setActiveTab = (key) => {
+    setActiveTabState(key)
+    setSearchParams(key === 'active' ? {} : { tab: key }, { replace: true })
+  }
+
   const [delistTarget, setDelistTarget] = useState(null)
   const [relistTarget, setRelistTarget] = useState(null)
 

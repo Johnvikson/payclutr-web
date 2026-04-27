@@ -221,7 +221,7 @@ export default function CreateListingPage() {
         navigate(`/listings/${result.id || id}`)
       } else {
         showToast('Listing submitted for review. We\'ll notify you once it\'s approved.', 'success')
-        navigate('/listings/my')
+        navigate('/listings/my?tab=pending_review')
       }
     } catch (err) {
       const msg = err?.detail ?? err?.message ?? 'Failed to publish. Please try again.'
