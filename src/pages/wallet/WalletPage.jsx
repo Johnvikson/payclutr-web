@@ -264,6 +264,15 @@ export default function WalletPage() {
   const [activeTab, setActiveTab] = useState('transactions')
   const [showWithdraw, setShowWithdraw] = useState(false)
 
+  // Scroll the deposit-account card into view without polluting the URL with a #hash
+  // (the hash + scroll-mt would re-snap mobile scroll position when scrolling upward).
+  const scrollToDeposit = () => {
+    document.getElementById('deposit-account')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }
+
   const { data: wallet, isLoading } = useQuery({
     queryKey: ['wallet'],
     queryFn: getWallet,
@@ -311,17 +320,18 @@ export default function WalletPage() {
                 <Button>Verify identity to withdraw</Button>
               </Link>
             )}
-            <a
-              href="#deposit-account"
+            <button
+              type="button"
+              onClick={scrollToDeposit}
               className="inline-flex items-center gap-2 h-10 px-4 text-sm font-medium rounded-lg bg-white/10 text-white border border-white/10 hover:bg-white/15 transition-colors"
             >
               <Plus size={16} /> Top up
-            </a>
+            </button>
           </div>
         </div>
 
         {/* ── Deposit account ─────────────────────────────────────────────── */}
-        <div id="deposit-account" className="mt-5 scroll-mt-20">
+        <div id="deposit-account" className="mt-5">
           <DepositAccount />
         </div>
 
