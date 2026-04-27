@@ -12,23 +12,26 @@ import Button from '../../components/ui/Button.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 
 const TABS = [
-  { key: 'active',   label: 'Active'   },
-  { key: 'sold',     label: 'Sold'     },
-  { key: 'delisted', label: 'Delisted' },
+  { key: 'active',         label: 'Active'         },
+  { key: 'sold',           label: 'Sold'           },
+  { key: 'pending_review', label: 'Pending Review' },
+  { key: 'delisted',       label: 'Delisted'       },
 ]
 
 const STATUS_TONE = {
-  active:   'active',
-  sold:     'completed',
-  delisted: 'gray',
-  draft:    'pending',
+  active:         'active',
+  sold:           'completed',
+  pending_review: 'pending',
+  delisted:       'gray',
+  draft:          'pending',
 }
 
 const STATUS_LABEL = {
-  active:   'Active',
-  sold:     'Sold',
-  delisted: 'Delisted',
-  draft:    'Draft',
+  active:         'Active',
+  sold:           'Sold',
+  pending_review: 'Pending review',
+  delisted:       'Delisted',
+  draft:          'Draft',
 }
 
 // ─── Skeletons ──────────────────────────────────────────────────────────────
@@ -109,7 +112,7 @@ function MobileListingRow({ listing, tab, onEdit, onDelist, onRelist }) {
 
         {/* Actions */}
         <div className="mt-2 flex items-center gap-3">
-          {tab === 'active' && (
+          {(tab === 'active' || tab === 'pending_review') && (
             <>
               <button
                 onClick={onEdit}
@@ -121,7 +124,7 @@ function MobileListingRow({ listing, tab, onEdit, onDelist, onRelist }) {
                 onClick={onDelist}
                 className="inline-flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600"
               >
-                <Trash2 size={12} /> Delist
+                <Trash2 size={12} /> {tab === 'pending_review' ? 'Withdraw' : 'Delist'}
               </button>
             </>
           )}
@@ -185,7 +188,7 @@ function TableRow({ listing, tab, onEdit, onDelist, onRelist }) {
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-1">
-          {tab === 'active' && (
+          {(tab === 'active' || tab === 'pending_review') && (
             <>
               <button
                 onClick={onEdit}
@@ -196,7 +199,7 @@ function TableRow({ listing, tab, onEdit, onDelist, onRelist }) {
               </button>
               <button
                 onClick={onDelist}
-                title="Delist"
+                title={tab === 'pending_review' ? 'Withdraw submission' : 'Delist'}
                 className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors"
               >
                 <Trash2 size={14} />
@@ -239,9 +242,10 @@ export default function MyListingsPage() {
   })
 
   const byStatus = {
-    active:   listings.filter((l) => l.status === 'active'),
-    sold:     listings.filter((l) => l.status === 'sold'),
-    delisted: listings.filter((l) => l.status === 'delisted'),
+    active:         listings.filter((l) => l.status === 'active'),
+    sold:           listings.filter((l) => l.status === 'sold'),
+    pending_review: listings.filter((l) => l.status === 'pending_review'),
+    delisted:       listings.filter((l) => l.status === 'delisted'),
   }
 
   const delistMutation = useMutation({
@@ -257,9 +261,10 @@ export default function MyListingsPage() {
   const current = byStatus[activeTab] || []
 
   const emptyState = {
-    active:   { title: 'No active listings',   body: 'Items you list will appear here.', cta: true  },
-    sold:     { title: 'No sold items yet',    body: 'When buyers purchase your items, they appear here.', cta: false },
-    delisted: { title: 'No delisted items',    body: 'Items you delist appear here. You can relist them anytime.', cta: false },
+    active:         { title: 'No active listings',     body: 'Items you list will appear here.', cta: true  },
+    sold:           { title: 'No sold items yet',      body: 'When buyers purchase your items, they appear here.', cta: false },
+    pending_review: { title: 'No listings under review', body: 'Listings awaiting admin approval appear here.', cta: false },
+    delisted:       { title: 'No delisted items',      body: 'Items you delist appear here. You can relist them anytime.', cta: false },
   }[activeTab]
 
   return (
