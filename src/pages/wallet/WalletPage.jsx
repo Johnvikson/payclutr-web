@@ -35,14 +35,20 @@ function DepositAccount() {
 
   const mutation = useMutation({
     mutationFn: setupDepositAccount,
-    onSuccess: () => {
-      setPending(true)
-      showToast('BVN submitted. Your deposit account will be ready shortly.', 'success')
+    onSuccess: (data) => {
+      // Backend returns the account synchronously (account_number + bank_name + account_name).
+      // Refetch the deposit-account query so the UI swaps to the active state.
+      if (data?.account_number) {
+        showToast('Deposit account created — you can now fund your wallet.', 'success')
+      } else {
+        // Fallback: backend returned 202 (async webhook flow)
+        setPending(true)
+        showToast('BVN submitted. Your deposit account will be ready shortly.', 'success')
+      }
       qc.invalidateQueries({ queryKey: ['deposit-account'] })
     },
     onError: (err) => {
-      // Note: client.js interceptor already unwraps to error.response.data,
-      // so the rejected value IS the body ({ detail: '...' }) — not an axios error.
+      // client.js interceptor flattens { detail } onto the rejected value.
       const msg =
         err?.detail ??
         err?.response?.data?.detail ??
