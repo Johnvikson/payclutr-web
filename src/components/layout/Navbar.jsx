@@ -215,7 +215,7 @@ export default function Navbar({ onMenuToggle, search, onSearchChange }) {
             <div className="absolute right-0 top-11 w-52 bg-white dark:bg-zinc-900 rounded-xl shadow-modal border border-gray-100 dark:border-zinc-800 z-50 py-1">
               <div className="px-3 py-2.5 border-b border-gray-100 dark:border-zinc-800">
                 <p className="text-xs font-semibold text-gray-900 dark:text-zinc-100 truncate">{user.first_name} {user.last_name}</p>
-                <p className="text-[10px] text-gray-400 dark:text-zinc-500 truncate mt-0.5">{user.email}</p>
+                <p className="text-[10px] text-gray-400 dark:text-zinc-500 truncate mt-0.5">@{user.username || user.email?.split('@')[0]}</p>
               </div>
               {[
                 { to: `/profile/${user.id}`, icon: User,        label: 'My profile' },

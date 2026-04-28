@@ -301,7 +301,8 @@ function EditProfileModal({ profile, onClose }) {
               </span>
             </div>
             <div className="mt-2 space-y-2">
-              <LockedRow icon={Mail} text={profile.email} verified={profile.email_verified} />
+              {/* profile uses UserPublicSerializer (no email) — read from auth context for own profile */}
+              <LockedRow icon={Mail} text={user?.email || '—'} verified={profile.email_verified} />
 
               {/* Phone — verifiable inline */}
               <div className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/40">

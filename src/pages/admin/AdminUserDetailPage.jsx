@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, MapPin, Calendar } from 'lucide-react'
-import { getUserProfile, approveKyc, rejectKyc, banUser, unbanUser, getOrders, getMyListings } from '../../api/endpoints.js'
+import { getUserProfile, approveKyc, rejectKyc, banUser, unbanUser, awardBadge, revokeBadge, getAdminOrders, getAdminListings } from '../../api/endpoints.js'
 import { formatNaira, formatDate } from '../../utils/formatters.js'
 import UserAvatar from '../../components/ui/UserAvatar.jsx'
 import StatusBadge from '../../components/ui/StatusBadge.jsx'
@@ -44,13 +44,30 @@ export default function AdminUserDetailPage() {
   const [modal, setModal] = useState(null)
 
   const { data: user } = useQuery({ queryKey: ['admin-user', id], queryFn: () => getUserProfile(id) })
-  const { data: orders = [] } = useQuery({ queryKey: ['orders'], queryFn: getOrders })
-  const { data: listings = [] } = useQuery({ queryKey: ['my-listings'], queryFn: getMyListings })
+  const { data: ordersData } = useQuery({
+    queryKey: ['admin-user-orders', id],
+    queryFn: () => getAdminOrders({ buyer: id }),
+    enabled: !!id,
+  })
+  const { data: listingsData } = useQuery({
+    queryKey: ['admin-user-listings', id],
+    queryFn: () => getAdminListings({ seller: id }),
+    enabled: !!id,
+  })
+  const orders   = ordersData?.data ?? []
+  const listings = listingsData?.data ?? []
 
-  const mutApprove = useMutation({ mutationFn: () => approveKyc(id), onSuccess: () => { qc.invalidateQueries(['admin-user', id]); showToast('KYC approved', 'success') } })
-  const mutReject  = useMutation({ mutationFn: (r) => rejectKyc(id, r), onSuccess: () => { qc.invalidateQueries(['admin-user', id]); showToast('KYC rejected', 'success') } })
-  const mutBan     = useMutation({ mutationFn: (r) => banUser(id, r), onSuccess: () => { qc.invalidateQueries(['admin-user', id]); showToast('User banned', 'success') } })
-  const mutUnban   = useMutation({ mutationFn: () => unbanUser(id), onSuccess: () => { qc.invalidateQueries(['admin-user', id]); showToast('User unbanned', 'success') } })
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['admin-user', id] })
+    qc.invalidateQueries({ queryKey: ['admin-users'] })
+  }
+
+  const mutApprove    = useMutation({ mutationFn: () => approveKyc(id),    onSuccess: () => { invalidate(); showToast('KYC approved', 'success') } })
+  const mutReject     = useMutation({ mutationFn: (r) => rejectKyc(id, r), onSuccess: () => { invalidate(); showToast('KYC rejected', 'success') } })
+  const mutBan        = useMutation({ mutationFn: (r) => banUser(id, r),   onSuccess: () => { invalidate(); showToast('User banned', 'success') } })
+  const mutUnban      = useMutation({ mutationFn: () => unbanUser(id),     onSuccess: () => { invalidate(); showToast('User unbanned', 'success') } })
+  const mutAwardBadge = useMutation({ mutationFn: () => awardBadge(id),    onSuccess: () => { invalidate(); showToast('Trusted badge awarded', 'success') } })
+  const mutRevokeBadge= useMutation({ mutationFn: () => revokeBadge(id),   onSuccess: () => { invalidate(); showToast('Trusted badge revoked', 'success') } })
 
   if (!user) return null
 
@@ -144,17 +161,19 @@ export default function AdminUserDetailPage() {
             )}
             {user.is_trusted_seller ? (
               <button
-                onClick={() => showToast('Trusted badge revoked', 'success')}
-                className="w-full py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                onClick={() => mutRevokeBadge.mutate()}
+                disabled={mutRevokeBadge.isPending}
+                className="w-full py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
-                Revoke Trusted Badge
+                {mutRevokeBadge.isPending ? 'Revoking…' : 'Revoke Trusted Badge'}
               </button>
             ) : (
               <button
-                onClick={() => showToast('Trusted badge awarded', 'success')}
-                className="w-full py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                onClick={() => mutAwardBadge.mutate()}
+                disabled={mutAwardBadge.isPending}
+                className="w-full py-2 border border-gray-200 text-brand rounded-lg text-sm font-medium hover:bg-orange-50 transition-colors disabled:opacity-50"
               >
-                Award Trusted Badge
+                {mutAwardBadge.isPending ? 'Awarding…' : 'Award Trusted Badge'}
               </button>
             )}
           </div>

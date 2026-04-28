@@ -150,16 +150,16 @@ function OrderChat({ orderId, userId, messages = [], isSending, onSend }) {
   }
 
   return (
-    <div className="flex flex-col border border-gray-100 rounded-xl overflow-hidden bg-white">
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-        <p className="text-xs font-semibold text-gray-500">Order Chat</p>
-        <p className="text-xs text-gray-400 mt-0.5">Messages stay on-platform for security</p>
+    <div className="flex flex-col border border-gray-100 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900">
+      <div className="px-4 py-3 border-b border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50">
+        <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Order Chat</p>
+        <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">Messages stay on-platform for security</p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 h-[420px]">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
-            <p className="text-sm text-gray-400">No messages yet. Start the conversation.</p>
+            <p className="text-sm text-gray-400 dark:text-zinc-500">No messages yet. Start the conversation.</p>
           </div>
         ) : (
           messages.map((msg) => (
@@ -169,10 +169,10 @@ function OrderChat({ orderId, userId, messages = [], isSending, onSend }) {
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-gray-100 px-3 py-3 flex items-end gap-2">
+      <div className="border-t border-gray-100 dark:border-zinc-800 px-3 py-3 flex items-end gap-2">
         <button
           onClick={() => fileRef.current?.click()}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors shrink-0"
         >
           <Paperclip size={18} />
         </button>
@@ -183,13 +183,13 @@ function OrderChat({ orderId, userId, messages = [], isSending, onSend }) {
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
           placeholder="Type a message…"
           rows={1}
-          className="flex-1 resize-none px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-brand-500 transition-colors"
+          className="flex-1 resize-none px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 focus:outline-none focus:border-brand dark:focus:border-brand transition-colors"
           style={{ minHeight: 38 }}
         />
         <button
           onClick={submit}
           disabled={!text.trim() || isSending}
-          className="p-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white transition-colors disabled:opacity-40 shrink-0"
+          className="p-2 rounded-lg bg-brand hover:bg-brand-600 text-white transition-colors disabled:opacity-40 shrink-0"
         >
           <Send size={16} />
         </button>
@@ -516,85 +516,94 @@ export default function OrderDetailPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex items-center gap-3 mb-6">
-        <Link to="/orders" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+        <Link to="/orders" className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400 transition-colors">
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Order #{order.uuid || order.id}</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Order #{order.uuid || order.id}</h1>
           <div className="flex items-center gap-2 mt-0.5">
             <StatusBadge status={order.status} />
-            <span className="text-xs text-gray-400">{formatDate(order.created_at)}</span>
+            <span className="text-xs text-gray-400 dark:text-zinc-500">{formatDate(order.created_at)}</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-xl p-5 mb-6">
+      <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-5 mb-6">
         <Stepper status={order.status} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-4">
           {/* Item card */}
-          <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-            <div className="aspect-[4/3] bg-gray-100">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl overflow-hidden">
+            <div className="aspect-[4/3] bg-gray-100 dark:bg-zinc-800">
               {img ? (
                 <img src={img} alt={order.listing?.title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <Package size={32} className="text-gray-300" />
+                  <Package size={32} className="text-gray-300 dark:text-zinc-600" />
                 </div>
               )}
             </div>
             <div className="p-4">
-              <Link to={`/listings/${order.listing?.id}`} className="text-sm font-semibold text-gray-900 hover:text-brand-600 transition-colors line-clamp-2">
+              <Link to={`/listings/${order.listing?.id}`} className="text-sm font-semibold text-gray-900 dark:text-zinc-100 hover:text-brand transition-colors line-clamp-2">
                 {order.listing?.title}
               </Link>
-              <p className="text-lg font-bold text-brand-600 mt-1">{formatNaira(order.item_price)}</p>
+              <p className="text-lg font-bold text-brand mt-1">{formatNaira(order.item_price)}</p>
               <div className="flex items-center gap-1.5 mt-2">
-                <Truck size={12} className="text-gray-400" />
-                <span className="text-xs text-gray-500">{formatShipping(order.shipping_method)}</span>
+                <Truck size={12} className="text-gray-400 dark:text-zinc-500" />
+                <span className="text-xs text-gray-500 dark:text-zinc-400">{formatShipping(order.shipping_method)}</span>
               </div>
             </div>
           </div>
 
-          {/* Fee breakdown */}
-          <div className="bg-white border border-gray-100 rounded-xl p-4 space-y-2.5">
-            <p className="text-sm font-semibold text-gray-900 mb-1">Payment Summary</p>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Item price</span>
-              <span className="font-medium text-gray-900">{formatNaira(order.item_price)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Platform fee (15%)</span>
-              <span className="font-medium text-gray-900">{formatNaira(order.platform_fee)}</span>
-            </div>
-            <div className="border-t border-gray-100 pt-2.5 flex justify-between text-sm">
-              <span className="text-gray-500">Seller receives</span>
-              <span className="font-bold text-gray-900">{formatNaira(order.seller_payout)}</span>
-            </div>
+          {/* Fee breakdown — buyer sees simple total; seller sees deduction */}
+          <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-4 space-y-2.5">
+            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-1">Payment Summary</p>
+            {role === 'seller' ? (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-zinc-400">Item price</span>
+                  <span className="font-medium text-gray-900 dark:text-zinc-200">{formatNaira(order.item_price)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-zinc-400">Service fee</span>
+                  <span className="font-medium text-red-500">−{formatNaira(order.platform_fee)}</span>
+                </div>
+                <div className="border-t border-gray-100 dark:border-zinc-800 pt-2.5 flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-zinc-400">You receive</span>
+                  <span className="font-bold text-gray-900 dark:text-zinc-100">{formatNaira(order.seller_payout)}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-zinc-400">Amount paid</span>
+                <span className="font-bold text-gray-900 dark:text-zinc-100">{formatNaira(order.item_price)}</span>
+              </div>
+            )}
           </div>
 
           {/* Escrow badge */}
-          <div className="flex items-center gap-3 p-4 bg-brand-50 border border-brand-100 rounded-xl">
-            <ShieldCheck size={20} className="text-brand-600 shrink-0" />
+          <div className="flex items-center gap-3 p-4 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-xl">
+            <ShieldCheck size={20} className="text-brand shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-brand-800">Escrow Protection</p>
-              <p className="text-xs text-brand-700 mt-0.5">Payment is held safely until delivery is confirmed</p>
+              <p className="text-sm font-semibold text-orange-900 dark:text-orange-200">Escrow Protection</p>
+              <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5">Payment is held safely until delivery is confirmed</p>
             </div>
           </div>
 
           {/* Other party */}
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-4">
+            <p className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wide mb-3">
               {role === 'buyer' ? 'Seller' : 'Buyer'}
             </p>
             <div className="flex items-center gap-3">
               <UserAvatar user={other} size="md" />
               <div>
-                <p className="text-sm font-semibold text-gray-900">{other?.first_name} {other?.last_name}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{other?.first_name} {other?.last_name}</p>
                 <div className="flex items-center gap-1 mt-0.5">
                   <Star size={11} className="text-amber-400 fill-amber-400" />
-                  <span className="text-xs text-gray-500">{other?.trust_score?.toFixed(1)}</span>
+                  <span className="text-xs text-gray-500 dark:text-zinc-400">{other?.trust_score?.toFixed(1) ?? '—'}</span>
                 </div>
               </div>
             </div>
