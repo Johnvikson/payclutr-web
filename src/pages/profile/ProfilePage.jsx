@@ -29,7 +29,7 @@ const TABS = [
 function EditProfileModal({ profile, onClose }) {
   const qc = useQueryClient()
   const { showToast } = useToast()
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const fileInputRef = useRef(null)
 
   // Combine first/last for the design's single "Display name" field. Split on save.
@@ -55,7 +55,9 @@ function EditProfileModal({ profile, onClose }) {
 
   const mutation = useMutation({
     mutationFn: (data) => updateMe(data),
-    onSuccess: () => {
+    onSuccess: (updated) => {
+      // Sync auth context so Sidebar/Navbar/Wallet etc. pick up the new username, avatar, etc.
+      if (updated && typeof updated === 'object') updateUser(updated)
       qc.invalidateQueries({ queryKey: ['profile', String(profile.id)] })
       showToast('Profile updated', 'success')
       onClose()
