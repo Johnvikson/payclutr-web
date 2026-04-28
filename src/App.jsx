@@ -22,6 +22,7 @@ import MyListingsPage from './pages/listings/MyListingsPage.jsx'
 
 import MyOrdersPage from './pages/orders/MyOrdersPage.jsx'
 import OrderDetailPage from './pages/orders/OrderDetailPage.jsx'
+import EscrowPage from './pages/orders/EscrowPage.jsx'
 
 import DisputeDetailPage from './pages/disputes/DisputeDetailPage.jsx'
 
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="/listings/my"       element={<RequireAuth><MyListingsPage /></RequireAuth>} />
           <Route path="/orders"            element={<RequireAuth><MyOrdersPage /></RequireAuth>} />
           <Route path="/orders/:id"        element={<RequireAuth><OrderDetailPage /></RequireAuth>} />
+          <Route path="/escrow"            element={<RequireAuth><EscrowPage /></RequireAuth>} />
           <Route path="/disputes/:id"      element={<RequireAuth><DisputeDetailPage /></RequireAuth>} />
           <Route path="/wallet"            element={<RequireAuth><WalletPage /></RequireAuth>} />
           <Route path="/notifications"     element={<RequireAuth><NotificationsPage /></RequireAuth>} />

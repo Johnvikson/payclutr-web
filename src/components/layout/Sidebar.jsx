@@ -1,9 +1,12 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   Search, Tag, Package, Wallet, ShieldCheck, User, Bell, LogOut, LogIn,
   LayoutDashboard, ArrowDownToLine, Users,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
+import { getOrders, getUnreadCount } from '../../api/endpoints.js'
+import { ESCROW_STATUSES } from '../orders/OrderRow.jsx'
 import Logo from '../ui/Logo.jsx'
 import UserAvatar from '../ui/UserAvatar.jsx'
 
@@ -45,6 +48,26 @@ export default function Sidebar({ onClose }) {
   const isAdminArea = location.pathname.startsWith('/admin')
   const isAdmin = user?.is_staff || user?.role === 'admin'
 
+  // Sidebar badge counts — only fetched when authenticated
+  const { data: ordersData = [] } = useQuery({
+    queryKey: ['orders'],
+    queryFn:  () => getOrders(),
+    enabled:  !!user,
+    refetchInterval: 60_000,
+  })
+  const { data: unreadData } = useQuery({
+    queryKey: ['notifications', 'unread'],
+    queryFn:  getUnreadCount,
+    enabled:  !!user,
+    refetchInterval: 60_000,
+  })
+
+  const ordersInProgress = ordersData.filter((o) =>
+    o.status !== 'completed' && o.status !== 'cancelled' && o.status !== 'refunded'
+  ).length
+  const escrowCount = ordersData.filter((o) => ESCROW_STATUSES.has(o.status)).length
+  const unreadCount = unreadData?.count || 0
+
   return (
     <aside className="flex flex-col h-full w-60 bg-white dark:bg-zinc-900 border-r border-gray-100 dark:border-zinc-800">
       {/* Brand */}
@@ -60,11 +83,12 @@ export default function Sidebar({ onClose }) {
         {user && (
           <>
             <NavItem to="/listings/my" icon={Tag}         label="My listings"   onClick={handleClick} />
-            <NavItem to="/orders"      icon={Package}     label="Orders"        onClick={handleClick} />
+            <NavItem to="/orders"      icon={Package}     label="Orders"        onClick={handleClick} badge={ordersInProgress || null} />
             <NavItem to="/wallet"      icon={Wallet}      label="Wallet"        onClick={handleClick} />
+            <NavItem to="/escrow"      icon={ShieldCheck} label="Escrow"        onClick={handleClick} badge={escrowCount || null} />
             <NavItem to={`/profile/${user.id}`} icon={User} label="Profile"     onClick={handleClick} />
             <NavItem to="/kyc"         icon={ShieldCheck} label="KYC"           onClick={handleClick} />
-            <NavItem to="/notifications" icon={Bell}      label="Notifications" onClick={handleClick} />
+            <NavItem to="/notifications" icon={Bell}      label="Notifications" onClick={handleClick} badge={unreadCount || null} />
           </>
         )}
 
