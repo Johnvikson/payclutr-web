@@ -29,6 +29,7 @@ const TABS = [
 function EditProfileModal({ profile, onClose }) {
   const qc = useQueryClient()
   const { showToast } = useToast()
+  const { user } = useAuth()
   const fileInputRef = useRef(null)
 
   // Combine first/last for the design's single "Display name" field. Split on save.
