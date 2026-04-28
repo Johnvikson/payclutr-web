@@ -13,6 +13,9 @@ export const changePassword = (data) => client.post('/auth/me/password/', data)
 export const sendEmailOtp = () => client.post('/auth/me/send-otp/')
 export const verifyEmailOtp = (data) => client.post('/auth/me/verify-otp/', data)
 
+export const sendPhoneOtp   = () => client.post('/auth/me/send-phone-otp/')
+export const verifyPhoneOtp = (otp) => client.post('/auth/me/verify-phone-otp/', { otp })
+
 export const submitKyc = (data) => client.post('/auth/me/kyc/', data)
 
 export const forgotPassword = (data) => client.post('/auth/forgot-password/', data)

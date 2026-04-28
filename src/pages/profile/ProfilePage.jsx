@@ -2,10 +2,10 @@ import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Pencil, X, BadgeCheck, MapPin, Calendar, Mail, ShieldCheck, CreditCard,
+  Pencil, X, BadgeCheck, MapPin, Calendar, Mail, Phone, ShieldCheck, CreditCard,
   Package, MessageSquare, UploadCloud, Lock,
 } from 'lucide-react'
-import { getUserProfile, updateMe, getListings } from '../../api/endpoints.js'
+import { getUserProfile, updateMe, getListings, sendPhoneOtp, verifyPhoneOtp, getMe } from '../../api/endpoints.js'
 import { useAuth } from '../../hooks/useAuth.js'
 import { useToast } from '../../components/ui/Toast.jsx'
 import UserAvatar from '../../components/ui/UserAvatar.jsx'
@@ -36,12 +36,21 @@ function EditProfileModal({ profile, onClose }) {
 
   const [form, setForm] = useState({
     display_name: initialDisplayName,
+    username:     profile?.username || '',
     bio:          profile?.bio   || '',
     location:     [profile?.city, profile?.state].filter(Boolean).join(', '),
     phone:        profile?.phone || '',
     avatar_url:   profile?.avatar_url || '',
   })
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [usernameError, setUsernameError] = useState('')
+
+  // Phone verification flow state
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false)
+  const [phoneOtp, setPhoneOtp] = useState('')
+  const [sendingPhoneOtp, setSendingPhoneOtp]  = useState(false)
+  const [verifyingPhoneOtp, setVerifyingPhoneOtp] = useState(false)
+  const [phoneVerifiedLocal, setPhoneVerifiedLocal] = useState(!!profile?.phone_verified)
 
   const mutation = useMutation({
     mutationFn: (data) => updateMe(data),
@@ -85,9 +94,56 @@ function EditProfileModal({ profile, onClose }) {
     set('avatar_url', '')
   }
 
+  // ── Phone OTP handlers ───────────────────────────────────────────────────
+  async function handleSendPhoneOtp() {
+    if (!profile?.phone) {
+      showToast('Save your phone number first, then verify it.', 'error')
+      return
+    }
+    setSendingPhoneOtp(true)
+    try {
+      await sendPhoneOtp()
+      setPhoneOtpSent(true)
+      showToast('Verification code sent to your phone.', 'success')
+    } catch (err) {
+      showToast(err?.detail ?? 'Could not send OTP.', 'error')
+    } finally {
+      setSendingPhoneOtp(false)
+    }
+  }
+
+  async function handleVerifyPhoneOtp() {
+    if (phoneOtp.length !== 6) {
+      showToast('Enter the 6-digit code.', 'error')
+      return
+    }
+    setVerifyingPhoneOtp(true)
+    try {
+      await verifyPhoneOtp(phoneOtp)
+      setPhoneVerifiedLocal(true)
+      setPhoneOtpSent(false)
+      setPhoneOtp('')
+      showToast('Phone verified.', 'success')
+      qc.invalidateQueries({ queryKey: ['profile', String(profile.id)] })
+    } catch (err) {
+      showToast(err?.detail ?? 'Invalid OTP. Please try again.', 'error')
+    } finally {
+      setVerifyingPhoneOtp(false)
+    }
+  }
+
   // ── Submit ───────────────────────────────────────────────────────────────
   function handleSubmit(e) {
     e.preventDefault()
+
+    // Validate username (3–20 letters/numbers/underscores)
+    const username = form.username.trim().toLowerCase()
+    if (username && !/^[a-z0-9_]{3,20}$/.test(username)) {
+      setUsernameError('3–20 chars, letters, numbers, underscores')
+      return
+    }
+    setUsernameError('')
+
     // Split "Display name" into first / last (first word vs the rest)
     const trimmed = form.display_name.trim()
     const parts = trimmed.split(/\s+/)
@@ -100,6 +156,7 @@ function EditProfileModal({ profile, onClose }) {
     const state = locationParts.slice(1).join(', ') || ''
 
     mutation.mutate({
+      username: username || null,
       first_name,
       last_name,
       bio: form.bio,
@@ -184,11 +241,20 @@ function EditProfileModal({ profile, onClose }) {
                 required
               />
             </Field>
-            <Field label="Username" hint="Auto-generated from your email">
+            <Field
+              label="Username"
+              error={usernameError}
+              hint={!usernameError ? '3–20 chars, letters, numbers, underscores' : undefined}
+            >
               <TextInput
                 prefix="@"
-                value={profile.email?.split('@')[0] || ''}
-                disabled
+                value={form.username}
+                onChange={(e) => {
+                  set('username', e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20).toLowerCase())
+                  if (usernameError) setUsernameError('')
+                }}
+                placeholder="emeka_o"
+                error={!!usernameError}
               />
             </Field>
           </div>
@@ -235,11 +301,62 @@ function EditProfileModal({ profile, onClose }) {
               </span>
             </div>
             <div className="mt-2 space-y-2">
-              <LockedRow icon={Mail}        text={profile.email}            verified={profile.email_verified} />
-              <LockedRow icon={ShieldCheck} text="NIN + BVN verified"        verified={profile.kyc_verified || profile.bvn_verified} />
+              <LockedRow icon={Mail} text={profile.email} verified={profile.email_verified} />
+
+              {/* Phone — verifiable inline */}
+              <div className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/40">
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  <Phone size={14} className={phoneVerifiedLocal ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-zinc-500'} />
+                  <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-zinc-300 truncate">
+                    {profile.phone || 'Add a phone number above'}
+                  </span>
+                  {phoneVerifiedLocal ? (
+                    <span className="relative w-9 h-5 rounded-full bg-emerald-500" title="Verified">
+                      <span className="absolute top-0.5 left-[18px] w-4 h-4 bg-white rounded-full shadow" />
+                    </span>
+                  ) : profile.phone ? (
+                    <button
+                      type="button"
+                      onClick={handleSendPhoneOtp}
+                      disabled={sendingPhoneOtp}
+                      className="text-xs font-medium text-brand hover:underline disabled:opacity-60"
+                    >
+                      {sendingPhoneOtp ? 'Sending…' : phoneOtpSent ? 'Resend' : 'Verify'}
+                    </button>
+                  ) : (
+                    <span className="relative w-9 h-5 rounded-full bg-gray-200 dark:bg-zinc-700">
+                      <span className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow" />
+                    </span>
+                  )}
+                </div>
+
+                {phoneOtpSent && !phoneVerifiedLocal && (
+                  <div className="px-3 pb-3 flex items-center gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={phoneOtp}
+                      onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="6-digit code"
+                      className="flex-1 h-9 px-3 text-sm tracking-widest font-mono rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleVerifyPhoneOtp}
+                      disabled={verifyingPhoneOtp || phoneOtp.length !== 6}
+                    >
+                      {verifyingPhoneOtp ? 'Verifying…' : 'Confirm'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <LockedRow icon={ShieldCheck} text="NIN + BVN verified" verified={profile.kyc_verified || profile.bvn_verified} />
             </div>
             <p className="mt-2 text-[11px] text-gray-500 dark:text-zinc-500">
-              To change verified info, visit Settings → Account.
+              Email and identity verifications are managed in Settings → Account. Verify your phone above.
             </p>
           </div>
 
@@ -474,9 +591,10 @@ export default function ProfilePage() {
             <Card>
               <SectionLabel>Verified</SectionLabel>
               <div className="mt-2 flex flex-wrap gap-2">
-                <VerificationBadge icon={Mail}        label="Email"      verified={!!profile.email_verified} />
+                <VerificationBadge icon={Mail}        label="Email"        verified={!!profile.email_verified} />
+                <VerificationBadge icon={Phone}       label="Phone"        verified={!!profile.phone_verified} />
                 <VerificationBadge icon={ShieldCheck} label="NIN + Selfie" verified={!!profile.kyc_verified} />
-                <VerificationBadge icon={CreditCard}  label="BVN"        verified={!!profile.bvn_verified} />
+                <VerificationBadge icon={CreditCard}  label="BVN"          verified={!!profile.bvn_verified} />
               </div>
               <p className="mt-3 text-[11px] text-gray-500 dark:text-zinc-500">
                 Verifications confirm the seller passed PayClutr's identity checks.
