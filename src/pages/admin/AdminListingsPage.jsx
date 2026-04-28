@@ -186,11 +186,16 @@ export default function AdminListingsPage() {
 
                   {/* Seller */}
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <UserAvatar user={listing.seller} size="sm" />
-                      <span className="text-sm text-gray-700 whitespace-nowrap">
-                        {listing.seller?.first_name}
-                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm text-gray-900 truncate">
+                          {listing.seller?.first_name} {listing.seller?.last_name}
+                        </div>
+                        <div className="text-[11px] text-gray-500 truncate">
+                          {listing.seller?.email}
+                        </div>
+                      </div>
                     </div>
                   </td>
 
