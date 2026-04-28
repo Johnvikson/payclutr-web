@@ -7,60 +7,95 @@ import { useAuth } from '../../hooks/useAuth.js'
 import { formatNaira, formatDate, formatShipping } from '../../utils/formatters.js'
 import { SkeletonRow } from '../../components/ui/Skeleton.jsx'
 import StatusBadge from '../../components/ui/StatusBadge.jsx'
-import UserAvatar from '../../components/ui/UserAvatar.jsx'
 
 const TABS = [
+  { key: 'all',     label: 'All' },
   { key: 'buying',  label: 'Buying' },
   { key: 'selling', label: 'Selling' },
 ]
 
-function OrderCard({ order, role }) {
-  const navigate = useNavigate()
-  const otherParty = role === 'buying' ? order.seller : order.buyer
+// Best-effort short, abbreviated name: "Adaeze O." / "Tunde A."
+function shortName(person) {
+  if (!person) return ''
+  const first = person.first_name || ''
+  const last  = person.last_name || ''
+  return `${first}${last ? ` ${last[0]}.` : ''}`.trim()
+}
+
+// Order reference like "PC-2841". Use uuid if it already starts with a prefix,
+// otherwise fall back to PC-{id}.
+function orderRef(order) {
+  if (order.uuid) {
+    const tail = String(order.uuid).slice(-4).toUpperCase()
+    return `PC-${tail}`
+  }
+  return `PC-${String(order.id).padStart(4, '0')}`
+}
+
+function OrderRow({ order, role, onClick }) {
+  const isBuying  = role === 'buying'
+  const counterparty = isBuying ? order.seller : order.buyer
   const img = order.listing?.images?.[0]?.image_url
 
   return (
-    <div
-      onClick={() => navigate(`/orders/${order.id}`)}
-      className="flex items-center gap-4 px-4 py-3.5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl mb-2 cursor-pointer hover:border-gray-200 dark:hover:border-zinc-700 transition-colors"
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left flex items-stretch gap-4 px-4 py-4 bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 last:border-b-0 hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors"
     >
-      <div className="w-14 h-14 rounded-lg bg-gray-100 dark:bg-zinc-800 shrink-0 overflow-hidden">
+      {/* Thumbnail */}
+      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-100 dark:bg-zinc-800 shrink-0 overflow-hidden">
         {img ? (
           <img src={img} alt={order.listing?.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Package size={18} className="text-gray-300 dark:text-zinc-600" />
+            <Package size={20} className="text-gray-300 dark:text-zinc-600" />
           </div>
         )}
       </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 line-clamp-1">{order.listing?.title}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <StatusBadge status={order.status} />
-          <span className="text-xs text-gray-400 dark:text-zinc-500">{formatShipping(order.shipping_method)}</span>
-        </div>
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <UserAvatar user={otherParty} size="xs" />
-          <span className="text-xs text-gray-500 dark:text-zinc-400">
-            {role === 'buying' ? 'Seller' : 'Buyer'}: {otherParty?.first_name} {otherParty?.last_name}
+      {/* Title block */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-gray-400 dark:text-zinc-500 tracking-wider">
+            {orderRef(order)}
           </span>
-          <span className="text-gray-300 dark:text-zinc-600">·</span>
-          <span className="text-xs text-gray-400 dark:text-zinc-500">{formatDate(order.created_at)}</span>
+          <StatusBadge status={order.status} />
         </div>
+
+        <p className="mt-1 text-sm sm:text-base font-semibold text-gray-900 dark:text-zinc-100 line-clamp-1">
+          {order.listing?.title || 'Untitled item'}
+        </p>
+
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
+          {isBuying ? 'From' : 'To'} {shortName(counterparty) || (isBuying ? 'Seller' : 'Buyer')}
+          <span className="mx-1.5 text-gray-300 dark:text-zinc-600">·</span>
+          {formatDate(order.created_at)}
+        </p>
       </div>
 
-      <div className="shrink-0 flex items-center gap-2">
-        <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{formatNaira(order.item_price)}</p>
-        <ChevronRight size={16} className="text-gray-300 dark:text-zinc-600" />
+      {/* Right rail: price + shipping + chevron */}
+      <div className="shrink-0 flex items-center gap-2 sm:gap-3">
+        <div className="text-right">
+          <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-zinc-100 whitespace-nowrap">
+            {formatNaira(order.item_price)}
+          </p>
+          {order.shipping_method && (
+            <p className="text-[11px] sm:text-xs text-gray-400 dark:text-zinc-500 mt-0.5 whitespace-nowrap">
+              {formatShipping(order.shipping_method)}
+            </p>
+          )}
+        </div>
+        <ChevronRight size={16} className="text-gray-300 dark:text-zinc-600 shrink-0" />
       </div>
-    </div>
+    </button>
   )
 }
 
 export default function MyOrdersPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('buying')
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState('all')
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['orders'],
@@ -69,61 +104,88 @@ export default function MyOrdersPage() {
 
   const buying  = orders.filter((o) => o.buyer?.id  === user?.id)
   const selling = orders.filter((o) => o.seller?.id === user?.id)
-  const current = activeTab === 'buying' ? buying : selling
+
+  // For each order, decide which side the current user is on so we render
+  // the right "From"/"To" label even on the All tab.
+  const taggedAll = orders.map((o) => ({
+    order: o,
+    role:  o.buyer?.id === user?.id ? 'buying' : 'selling',
+  }))
+  const taggedBuying  = buying.map((o)  => ({ order: o, role: 'buying'  }))
+  const taggedSelling = selling.map((o) => ({ order: o, role: 'selling' }))
+
+  const current =
+    activeTab === 'buying'  ? taggedBuying  :
+    activeTab === 'selling' ? taggedSelling :
+                              taggedAll
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">My Orders</h1>
-        <p className="text-sm text-gray-400 dark:text-zinc-500 mt-0.5">Track and manage your transactions</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
+          My orders
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+          Track everything you're buying and selling
+        </p>
       </div>
 
-      <div className="flex gap-1 border-b border-gray-100 dark:border-zinc-800 mb-6">
+      {/* Tabs */}
+      <div className="flex gap-6 sm:gap-8 border-b border-gray-200 dark:border-zinc-800 mb-5 overflow-x-auto scrollbar-hide">
         {TABS.map(({ key, label }) => {
-          const count = key === 'buying' ? buying.length : selling.length
           const isActive = activeTab === key
           return (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`relative pb-3 px-1 mr-5 text-sm font-medium transition-colors ${
-                isActive ? 'text-brand' : 'text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300'
+              className={`relative pb-3 text-sm font-medium whitespace-nowrap transition-colors ${
+                isActive
+                  ? 'text-brand'
+                  : 'text-gray-500 dark:text-zinc-500 hover:text-gray-900 dark:hover:text-zinc-200'
               }`}
             >
               {label}
-              {!isLoading && count > 0 && (
-                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                  isActive ? 'bg-orange-50 dark:bg-orange-900/20 text-brand' : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400'
-                }`}>
-                  {count}
-                </span>
-              )}
               {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand rounded-full" />
+                <span className="absolute -bottom-px left-0 right-0 h-0.5 bg-brand rounded-full" />
               )}
             </button>
           )
         })}
       </div>
 
-      <div>
+      {/* List — single bordered container with row dividers */}
+      <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl overflow-hidden">
         {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
+          <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
+          </div>
         ) : current.length === 0 ? (
-          <div className="py-16 text-center">
-            <Package size={36} className="text-gray-300 dark:text-zinc-600 mx-auto mb-3" />
-            <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">
-              {activeTab === 'buying' ? 'No orders yet' : 'No sales yet'}
+          <div className="py-20 text-center">
+            <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <Package size={22} className="text-gray-300 dark:text-zinc-600" />
+            </div>
+            <p className="text-sm font-medium text-gray-700 dark:text-zinc-200">
+              {activeTab === 'selling'
+                ? 'No sales yet'
+                : activeTab === 'buying'
+                  ? 'No purchases yet'
+                  : 'No orders yet'}
             </p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-              {activeTab === 'buying'
-                ? 'Browse listings and buy something!'
-                : 'List an item and start selling'}
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1 px-6">
+              {activeTab === 'selling'
+                ? 'List an item and start selling'
+                : 'Browse listings to make your first order'}
             </p>
           </div>
         ) : (
-          current.map((order) => (
-            <OrderCard key={order.id} order={order} role={activeTab} />
+          current.map(({ order, role }) => (
+            <OrderRow
+              key={order.id}
+              order={order}
+              role={role}
+              onClick={() => navigate(`/orders/${order.id}`)}
+            />
           ))
         )}
       </div>
