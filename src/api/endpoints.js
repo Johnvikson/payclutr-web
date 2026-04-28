@@ -22,8 +22,19 @@ export const getUserProfile = (id) => client.get(`/auth/profile/${id}/`)
 
 // ── Listings ──────────────────────────────────────────────────────────────────
 export const getListings = (filters = {}) => {
-  const params = new URLSearchParams(filters).toString()
-  return client.get(`/listings/?${params}`)
+  // Defensive: ignore non-plain-object args (e.g. React Query context object
+  // when this is used directly as a queryFn). Only string/number values pass through.
+  const safe = {}
+  if (filters && typeof filters === 'object' && !Array.isArray(filters) && !(filters instanceof AbortSignal)) {
+    for (const [k, v] of Object.entries(filters)) {
+      if (v == null) continue
+      if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+        safe[k] = v
+      }
+    }
+  }
+  const params = new URLSearchParams(safe).toString()
+  return client.get(`/listings/${params ? '?' + params : ''}`)
 }
 export const getListing = (id) => client.get(`/listings/${id}/`)
 export const uploadListingImage = (file) => {
@@ -35,7 +46,9 @@ export const createListing = (data) => client.post('/listings/create/', data)
 export const updateListing = (id, data) => client.patch(`/listings/${id}/edit/`, data)
 export const deleteListing = (id) => client.delete(`/listings/${id}/delete/`)
 export const getMyListings = (status) => {
-  const params = status ? `?status=${status}` : ''
+  // Defensive: only accept string status. Guards against accidentally being
+  // used directly as a React Query queryFn (which would pass a context object).
+  const params = typeof status === 'string' && status ? `?status=${encodeURIComponent(status)}` : ''
   return client.get(`/listings/my/${params}`)
 }
 

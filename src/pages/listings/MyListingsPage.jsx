@@ -248,7 +248,7 @@ export default function MyListingsPage() {
 
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ['my-listings'],
-    queryFn: getMyListings,
+    queryFn: () => getMyListings(),
   })
 
   const byStatus = {
