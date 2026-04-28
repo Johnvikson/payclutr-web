@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Pencil, X, BadgeCheck, MapPin, Calendar, Mail, Phone, ShieldCheck, CreditCard,
-  Package, MessageSquare, Inbox,
+  Pencil, X, BadgeCheck, MapPin, Calendar, Mail, ShieldCheck, CreditCard,
+  Package, MessageSquare, UploadCloud, Lock,
 } from 'lucide-react'
 import { getUserProfile, updateMe, getListings } from '../../api/endpoints.js'
 import { useAuth } from '../../hooks/useAuth.js'
@@ -11,12 +11,13 @@ import { useToast } from '../../components/ui/Toast.jsx'
 import UserAvatar from '../../components/ui/UserAvatar.jsx'
 import { SkeletonCard } from '../../components/ui/Skeleton.jsx'
 import ListingCard from '../../components/listings/ListingCard.jsx'
+import { uploadImage } from '../../lib/supabase.js'
 import { formatDate } from '../../utils/formatters.js'
 
 import Button from '../../components/ui/Button.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import Stars from '../../components/ui/Stars.jsx'
-import { Field, TextInput } from '../../components/ui/Field.jsx'
+import { Field, TextInput, TextArea } from '../../components/ui/Field.jsx'
 
 const TABS = [
   { key: 'listings', label: 'Listings' },
@@ -24,17 +25,23 @@ const TABS = [
   { key: 'about',    label: 'About'    },
 ]
 
-// ─── Edit Profile modal (slimmed-down, themed) ──────────────────────────────
+// ─── Edit Profile modal — matches Claude Design ─────────────────────────────
 function EditProfileModal({ profile, onClose }) {
   const qc = useQueryClient()
   const { showToast } = useToast()
+  const fileInputRef = useRef(null)
+
+  // Combine first/last for the design's single "Display name" field. Split on save.
+  const initialDisplayName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
 
   const [form, setForm] = useState({
-    first_name: profile?.first_name || '',
-    last_name:  profile?.last_name  || '',
-    state:      profile?.state      || '',
-    city:       profile?.city       || '',
+    display_name: initialDisplayName,
+    bio:          profile?.bio   || '',
+    location:     [profile?.city, profile?.state].filter(Boolean).join(', '),
+    phone:        profile?.phone || '',
+    avatar_url:   profile?.avatar_url || '',
   })
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   const mutation = useMutation({
     mutationFn: (data) => updateMe(data),
@@ -48,49 +55,220 @@ function EditProfileModal({ profile, onClose }) {
     },
   })
 
-  const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+  const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }))
+
+  // ── Avatar upload handlers ───────────────────────────────────────────────
+  async function handleAvatarChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      showToast('Please choose an image file.', 'error')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Image must be 2MB or less.', 'error')
+      return
+    }
+    setUploadingAvatar(true)
+    try {
+      const url = await uploadImage(file)
+      set('avatar_url', url)
+    } catch (err) {
+      showToast('Avatar upload failed. Please try again.', 'error')
+    } finally {
+      setUploadingAvatar(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  function handleAvatarRemove() {
+    set('avatar_url', '')
+  }
+
+  // ── Submit ───────────────────────────────────────────────────────────────
+  function handleSubmit(e) {
+    e.preventDefault()
+    // Split "Display name" into first / last (first word vs the rest)
+    const trimmed = form.display_name.trim()
+    const parts = trimmed.split(/\s+/)
+    const first_name = parts[0] || ''
+    const last_name  = parts.slice(1).join(' ') || ''
+
+    // Split "Lekki, Lagos" → city: Lekki, state: Lagos State
+    const locationParts = form.location.split(',').map((s) => s.trim()).filter(Boolean)
+    const city  = locationParts[0] || ''
+    const state = locationParts.slice(1).join(', ') || ''
+
+    mutation.mutate({
+      first_name,
+      last_name,
+      bio: form.bio,
+      city,
+      state,
+      phone: form.phone || null,
+      avatar_url: form.avatar_url || null,
+    })
+  }
+
+  // Build a synthetic user for the preview avatar so initials/colors update live
+  const previewUser = {
+    avatar_url: form.avatar_url,
+    first_name: form.display_name.split(/\s+/)[0] || profile.first_name,
+    last_name:  form.display_name.split(/\s+/).slice(1).join(' ') || profile.last_name,
+  }
 
   return (
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-zinc-800">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-lg shadow-2xl max-h-[92vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900 z-10">
           <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Edit profile</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors"
+            aria-label="Close"
           >
             <X size={18} />
           </button>
         </div>
-        <form
-          onSubmit={(e) => { e.preventDefault(); mutation.mutate(form) }}
-          className="p-5 space-y-4"
-        >
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="First name">
-              <TextInput name="first_name" value={form.first_name} onChange={handleChange} required />
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+
+          {/* ── Profile photo ─────────────────────────────────────────── */}
+          <div className="flex items-center gap-4">
+            <UserAvatar user={previewUser} size="xl" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-gray-900 dark:text-zinc-100">Profile photo</div>
+              <div className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">JPG or PNG, square, max 2MB</div>
+              <div className="mt-2 flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  icon={UploadCloud}
+                  disabled={uploadingAvatar}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploadingAvatar ? 'Uploading…' : 'Upload new'}
+                </Button>
+                {form.avatar_url && (
+                  <button
+                    type="button"
+                    onClick={handleAvatarRemove}
+                    className="text-xs font-medium text-gray-500 dark:text-zinc-400 hover:text-red-500 transition-colors"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
+          </div>
+
+          {/* ── Display name + Username ───────────────────────────────── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Display name">
+              <TextInput
+                value={form.display_name}
+                onChange={(e) => set('display_name', e.target.value)}
+                placeholder="e.g. Emeka Obi"
+                required
+              />
             </Field>
-            <Field label="Last name">
-              <TextInput name="last_name" value={form.last_name} onChange={handleChange} required />
+            <Field label="Username" hint="Auto-generated from your email">
+              <TextInput
+                prefix="@"
+                value={profile.email?.split('@')[0] || ''}
+                disabled
+              />
             </Field>
           </div>
-          <Field label="State">
-            <TextInput name="state" value={form.state} onChange={handleChange} placeholder="e.g. Lagos" />
+
+          {/* ── Bio ───────────────────────────────────────────────────── */}
+          <Field
+            label="Bio"
+            hint={`${form.bio.length}/160`}
+          >
+            <TextArea
+              rows={3}
+              maxLength={160}
+              value={form.bio}
+              onChange={(e) => set('bio', e.target.value)}
+              placeholder="A little about yourself — what you sell, where you're based, anything that helps buyers trust you."
+            />
           </Field>
-          <Field label="City">
-            <TextInput name="city" value={form.city} onChange={handleChange} placeholder="e.g. Lekki" />
-          </Field>
-          <div className="flex gap-2 pt-2">
-            <Button type="button" variant="secondary" full onClick={onClose}>Cancel</Button>
-            <Button type="submit" full disabled={mutation.isPending}>
+
+          {/* ── Location + Phone ──────────────────────────────────────── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Location">
+              <TextInput
+                value={form.location}
+                onChange={(e) => set('location', e.target.value)}
+                placeholder="e.g. Lekki, Lagos State"
+              />
+            </Field>
+            <Field label="Phone number">
+              <TextInput
+                prefix="NG +234"
+                value={form.phone}
+                onChange={(e) => set('phone', e.target.value)}
+                placeholder="801 234 5678"
+              />
+            </Field>
+          </div>
+
+          {/* ── Verified — Locked ─────────────────────────────────────── */}
+          <div className="pt-2">
+            <div className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-zinc-500 inline-flex items-center gap-1.5">
+              Verified <span className="text-gray-400 dark:text-zinc-600">—</span>
+              <span className="inline-flex items-center gap-1 text-gray-400 dark:text-zinc-600">
+                <Lock size={10} /> Locked
+              </span>
+            </div>
+            <div className="mt-2 space-y-2">
+              <LockedRow icon={Mail}        text={profile.email}            verified={profile.email_verified} />
+              <LockedRow icon={ShieldCheck} text="NIN + BVN verified"        verified={profile.kyc_verified || profile.bvn_verified} />
+            </div>
+            <p className="mt-2 text-[11px] text-gray-500 dark:text-zinc-500">
+              To change verified info, visit Settings → Account.
+            </p>
+          </div>
+
+          {/* ── Footer ────────────────────────────────────────────────── */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800 -mx-5 px-5 pb-0 mt-2 -mb-1">
+            <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={mutation.isPending || uploadingAvatar}>
               {mutation.isPending ? 'Saving…' : 'Save changes'}
             </Button>
           </div>
         </form>
       </div>
+    </div>
+  )
+}
+
+// Read-only locked row in the Verified section
+function LockedRow({ icon: Icon, text, verified }) {
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/40">
+      <Icon size={14} className={verified ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-zinc-500'} />
+      <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-zinc-300 truncate">{text || '—'}</span>
+      <span
+        className={`relative w-9 h-5 rounded-full ${verified ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-zinc-700'}`}
+        title={verified ? 'Verified' : 'Not verified'}
+        aria-label={verified ? 'Verified' : 'Not verified'}
+      >
+        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow ${verified ? 'left-[18px]' : 'left-0.5'}`} />
+      </span>
     </div>
   )
 }
@@ -279,6 +457,12 @@ export default function ProfilePage() {
         {/* About tab */}
         {tab === 'about' && (
           <div className="mt-5 space-y-3">
+            {profile.bio && (
+              <Card>
+                <SectionLabel>Bio</SectionLabel>
+                <p className="mt-1.5 text-sm text-gray-700 dark:text-zinc-300 leading-relaxed">{profile.bio}</p>
+              </Card>
+            )}
             <Card>
               <SectionLabel>Location</SectionLabel>
               <p className="mt-1.5 text-sm text-gray-700 dark:text-zinc-300 inline-flex items-center gap-1.5">
