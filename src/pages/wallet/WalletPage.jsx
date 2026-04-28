@@ -302,7 +302,9 @@ export default function WalletPage() {
               </div>
               <div className="text-xs text-zinc-400 mt-2 truncate">
                 {user?.first_name} {user?.last_name}
-                {user?.email && <> · @{user.email.split('@')[0]}</>}
+                {(user?.username || user?.email) && (
+                  <> · @{user.username || user.email.split('@')[0]}</>
+                )}
               </div>
             </div>
             <Logo size="sm" mono markOnly />
