@@ -483,12 +483,29 @@ export default function ProfilePage() {
 
       <div className="px-4 lg:px-8 -mt-10 pb-6 max-w-6xl mx-auto">
 
-        {/* Header row: avatar + name/meta + edit button */}
-        <div className="flex items-end gap-4 flex-wrap">
-          <UserAvatar user={profile} size="2xl" className="ring-4 ring-white dark:ring-zinc-900" />
-          <div className="pb-1 flex-1 min-w-0">
+        {/* Header — stacks on mobile, row on sm+ */}
+        <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+          {/* Avatar + Edit button row on mobile */}
+          <div className="flex items-end justify-between gap-3 sm:block">
+            <UserAvatar user={profile} size="2xl" className="ring-4 ring-white dark:ring-zinc-900" />
+            {isOwn && (
+              <Button
+                variant="secondary"
+                icon={Pencil}
+                onClick={() => setEditOpen(true)}
+                className="sm:hidden"
+              >
+                Edit
+              </Button>
+            )}
+          </div>
+
+          {/* Name + meta */}
+          <div className="sm:pb-1 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 truncate">{fullName}</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-zinc-100 break-words min-w-0">
+                {fullName}
+              </h1>
               {showVerifiedTick && (
                 <BadgeCheck size={18} className="text-blue-500 shrink-0" title="Verified" />
               )}
@@ -496,7 +513,7 @@ export default function ProfilePage() {
                 <Badge tone="brand" size="xs" dot={false}>Trusted seller</Badge>
               )}
             </div>
-            <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-zinc-500 flex-wrap">
+            <div className="flex items-center gap-x-2 gap-y-1 mt-1 text-xs text-gray-500 dark:text-zinc-500 flex-wrap">
               {memberSince && (
                 <span className="inline-flex items-center gap-1">
                   <Calendar size={11} /> Member since {memberSince}
@@ -504,19 +521,26 @@ export default function ProfilePage() {
               )}
               {ratingNumber && (
                 <>
-                  <span>·</span>
+                  <span className="hidden sm:inline">·</span>
                   <span className="inline-flex items-center gap-1.5">
                     <Stars value={profile.trust_score} size={11} />
                     <span className="font-medium text-gray-700 dark:text-zinc-300">{ratingNumber}</span>
                   </span>
                 </>
               )}
-              <span>·</span>
+              <span className="hidden sm:inline">·</span>
               <span>{profile.total_sales || 0} sales</span>
             </div>
           </div>
+
+          {/* Edit button on desktop */}
           {isOwn && (
-            <Button variant="secondary" icon={Pencil} onClick={() => setEditOpen(true)}>
+            <Button
+              variant="secondary"
+              icon={Pencil}
+              onClick={() => setEditOpen(true)}
+              className="hidden sm:inline-flex"
+            >
               Edit profile
             </Button>
           )}
