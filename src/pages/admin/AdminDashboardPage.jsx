@@ -1,120 +1,336 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import {
-  Users, Tag, ShoppingBag, TrendingUp, DollarSign,
-  AlertTriangle, Clock, Shield, UserPlus, CheckCircle,
-  ArrowUpRight, BadgeCheck,
+  ArrowRight,
+  Check,
+  Package,
+  Shield,
+  ShoppingBag,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  X,
 } from 'lucide-react'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts'
-import { getAdminStats } from '../../api/endpoints.js'
+import { getAdminOrders, getAdminStats, getAdminUsers } from '../../api/endpoints.js'
 import { formatNaira } from '../../utils/formatters.js'
+import StatusBadge from '../../components/ui/StatusBadge.jsx'
+import UserAvatar from '../../components/ui/UserAvatar.jsx'
+import { orderRef } from '../../components/orders/OrderRow.jsx'
 
-const buildStats = (s) => [
-  { label: 'Total Users',         value: s.total_users,          icon: Users,         iconClass: 'bg-blue-100 text-blue-600' },
-  { label: 'Total Listings',      value: s.total_listings,       icon: Tag,           iconClass: 'bg-brand-50 text-brand-600' },
-  { label: 'Total Orders',        value: s.total_orders,         icon: ShoppingBag,   iconClass: 'bg-purple-100 text-purple-600' },
-  { label: 'GMV',                 value: formatNaira(s.gmv),     icon: TrendingUp,    iconClass: 'bg-green-100 text-green-600' },
-  { label: 'Total Revenue',       value: formatNaira(s.revenue), icon: DollarSign,    iconClass: 'bg-emerald-100 text-emerald-600' },
-  { label: 'Open Disputes',       value: s.open_disputes,        icon: AlertTriangle, iconClass: 'bg-red-100 text-red-600' },
-  { label: 'Pending Withdrawals', value: s.pending_withdrawals,  icon: Clock,         iconClass: 'bg-yellow-100 text-yellow-600' },
-  { label: 'Pending KYC',         value: s.pending_kyc,          icon: Shield,        iconClass: 'bg-indigo-100 text-indigo-600' },
+const EMPTY_STATS = {
+  total_users: 0,
+  total_listings: 0,
+  total_orders: 0,
+  revenue: 0,
+  pending_kyc: 0,
+  orders_per_day: [],
+  revenue_per_day: [],
+}
+
+const MONTH_REVENUE = [
+  { month: 'Jan', value: 38 },
+  { month: 'Feb', value: 52 },
+  { month: 'Mar', value: 47 },
+  { month: 'Apr', value: 64 },
+  { month: 'May', value: 0 },
+  { month: 'Jun', value: 0 },
 ]
 
-const activities = [
-  { text: 'New user registered: Chidi Nwosu',          icon: UserPlus,      bg: 'bg-blue-100',   color: 'text-blue-600',   time: '2m ago' },
-  { text: 'Order completed: Samsung TV — ₦180,000',    icon: CheckCircle,   bg: 'bg-green-100',  color: 'text-green-600',  time: '8m ago' },
-  { text: 'Dispute raised on order #ord_004',           icon: AlertTriangle, bg: 'bg-red-100',    color: 'text-red-600',    time: '15m ago' },
-  { text: 'KYC submitted: Fatima Bello',                icon: Shield,        bg: 'bg-indigo-100', color: 'text-indigo-600', time: '22m ago' },
-  { text: 'Withdrawal requested: ₦30,000',              icon: ArrowUpRight,  bg: 'bg-yellow-100', color: 'text-yellow-600', time: '31m ago' },
-  { text: 'New listing: iPhone 13 Pro Max',             icon: Tag,           bg: 'bg-brand-50',   color: 'text-brand-600', time: '45m ago' },
-  { text: 'Order placed: HP Laptop',                    icon: ShoppingBag,   bg: 'bg-purple-100', color: 'text-purple-600', time: '1h ago' },
-  { text: 'KYC approved: Victor Johnson',               icon: BadgeCheck,    bg: 'bg-green-100',  color: 'text-green-600',  time: '2h ago' },
-]
+function compactNumber(value) {
+  return Number(value || 0).toLocaleString('en-NG')
+}
 
-const fmtRevY = (v) => {
-  if (v >= 1_000_000) return `₦${(v / 1_000_000).toFixed(1)}M`
-  if (v >= 1_000) return `₦${(v / 1_000).toFixed(0)}k`
-  return `₦${v}`
+function shortName(user) {
+  if (!user) return 'User'
+  const first = user.first_name || ''
+  const last = user.last_name ? ` ${user.last_name[0]}.` : ''
+  return `${first}${last}`.trim() || user.email || 'User'
+}
+
+function statCards(stats) {
+  return [
+    {
+      label: 'Total users',
+      value: compactNumber(stats.total_users),
+      change: '+8.2%',
+      up: true,
+      icon: Users,
+    },
+    {
+      label: 'Active listings',
+      value: compactNumber(stats.total_listings),
+      change: '+2.1%',
+      up: true,
+      icon: Package,
+    },
+    {
+      label: 'Orders today',
+      value: compactNumber(stats.total_orders),
+      change: '-5.4%',
+      up: false,
+      icon: ShoppingBag,
+    },
+    {
+      label: 'Revenue (30d)',
+      value: formatNaira(stats.revenue || 0),
+      change: '+14.7%',
+      up: true,
+      icon: TrendingUp,
+    },
+  ]
+}
+
+function StatCard({ stat }) {
+  const StatIcon = stat.icon
+  const TrendIcon = stat.up ? TrendingUp : TrendingDown
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-xl p-5">
+      <div className="flex items-start justify-between">
+        <div className="w-9 h-9 rounded-lg bg-orange-50 text-brand flex items-center justify-center">
+          <StatIcon size={16} />
+        </div>
+        <span
+          className={[
+            'inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded',
+            stat.up ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50',
+          ].join(' ')}
+        >
+          <TrendIcon size={10} />
+          {stat.change}
+        </span>
+      </div>
+      <div className="mt-3 text-2xl font-bold text-gray-900">{stat.value}</div>
+      <div className="text-xs text-gray-500 mt-0.5">{stat.label}</div>
+    </div>
+  )
+}
+
+function OrdersChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height={176}>
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id="ordersGradient" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#E8470A" stopOpacity={0.18} />
+            <stop offset="100%" stopColor="#E8470A" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid vertical={false} stroke="#f3f4f6" />
+        <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9ca3af' }} tickFormatter={(date) => String(date).slice(5)} />
+        <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} width={34} />
+        <Tooltip />
+        <Area type="monotone" dataKey="count" stroke="#E8470A" strokeWidth={2} fill="url(#ordersGradient)" />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+function RevenueBars() {
+  const max = Math.max(...MONTH_REVENUE.map((row) => row.value), 1)
+
+  return (
+    <div className="flex items-end justify-between gap-3 h-44 pt-2">
+      {MONTH_REVENUE.map((row) => (
+        <div key={row.month} className="flex-1 flex flex-col items-center gap-2">
+          <div className="w-full bg-gray-100 rounded-t-md relative overflow-hidden" style={{ height: 132 }}>
+            <div
+              className="absolute bottom-0 left-0 right-0 bg-brand rounded-t-md"
+              style={{ height: `${(row.value / max) * 100}%`, opacity: row.value ? 1 : 0.15 }}
+            />
+          </div>
+          <span className="text-[11px] text-gray-400">{row.month}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function RecentOrdersTable({ orders }) {
+  const navigate = useNavigate()
+
+  return (
+    <div className="xl:col-span-2 bg-white border border-gray-100 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 className="text-base font-semibold text-gray-800">Recent orders</h3>
+        <button
+          type="button"
+          onClick={() => navigate('/admin/orders')}
+          className="inline-flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        >
+          View all
+          <ArrowRight size={14} />
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-xs text-gray-500">
+            <tr>
+              <th className="text-left font-medium px-5 py-2.5">Order</th>
+              <th className="text-left font-medium px-5 py-2.5">Buyer / Seller</th>
+              <th className="text-left font-medium px-5 py-2.5">Amount</th>
+              <th className="text-left font-medium px-5 py-2.5">Status</th>
+              <th className="px-5 py-2.5" />
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order.id} className="border-t border-gray-100">
+                <td className="px-5 py-3 font-mono text-xs text-gray-700">{orderRef(order)}</td>
+                <td className="px-5 py-3 text-gray-700">
+                  {shortName(order.buyer)} / {shortName(order.seller)}
+                </td>
+                <td className="px-5 py-3 font-semibold text-gray-900">{formatNaira(order.total_amount || order.item_price || 0)}</td>
+                <td className="px-5 py-3"><StatusBadge status={order.status} /></td>
+                <td className="px-5 py-3 text-right">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/admin/orders/${order.id}`)}
+                    className="text-xs text-brand font-medium hover:underline"
+                  >
+                    View
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {orders.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-400">No recent orders</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function PendingKycQueue({ users }) {
+  const navigate = useNavigate()
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 className="text-base font-semibold text-gray-800">Pending KYC</h3>
+        <button
+          type="button"
+          onClick={() => navigate('/admin/kyc')}
+          className="h-8 px-2 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        >
+          Review
+        </button>
+      </div>
+      <div className="divide-y divide-gray-100">
+        {users.map((user) => (
+          <div key={user.id} className="p-4 flex items-center gap-3">
+            <UserAvatar user={user} size="md" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-900 truncate">{shortName(user)}</div>
+              <div className="text-xs text-gray-500 font-mono truncate">{user.nin || user.bvn || user.email}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/kyc')}
+              className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center"
+            >
+              <Check size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/kyc')}
+              className="w-7 h-7 rounded-md bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+        {users.length === 0 && (
+          <div className="p-8 text-center text-sm text-gray-400">No pending KYC submissions</div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export default function AdminDashboardPage() {
-  const { data: stats } = useQuery({ queryKey: ['admin-stats'], queryFn: getAdminStats })
-
-  const today = new Date().toLocaleDateString('en-NG', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  const { data: statsData, isLoading: statsLoading } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: getAdminStats,
+  })
+  const { data: ordersData } = useQuery({
+    queryKey: ['admin-orders', 'dashboard'],
+    queryFn: () => getAdminOrders({}),
+  })
+  const { data: usersData } = useQuery({
+    queryKey: ['admin-users', 'dashboard'],
+    queryFn: () => getAdminUsers({}),
   })
 
-  if (!stats) return null
+  const stats = statsData || EMPTY_STATS
+  const orders = (ordersData?.data || []).slice(0, 5)
+  const pendingKyc = (usersData?.data || []).filter((user) => user.kyc_status === 'pending').slice(0, 4)
+  const today = new Date().toLocaleDateString('en-NG', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Welcome back, Admin</p>
-        </div>
-        <span className="text-sm text-gray-400">{today}</span>
-      </div>
+    <div className="max-w-7xl px-6 lg:px-8 py-6">
+      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <p className="text-sm text-gray-500 mt-0.5">Today, {today}</p>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-        {buildStats(stats).map(({ label, value, icon: Icon, iconClass }) => (
-          <div key={label} className="bg-white border border-gray-100 rounded-xl p-4">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconClass}`}>
-              <Icon size={20} />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 mt-3">{value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-          </div>
+      <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards(stats).map((stat) => (
+          <StatCard key={stat.label} stat={stat} />
         ))}
       </div>
 
-      {/* Charts */}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white border border-gray-100 rounded-xl p-5">
-          <p className="text-sm font-semibold text-gray-900 mb-4">Orders (Last 7 Days)</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={stats.orders_per_day}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d) => d.slice(5)} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="count" stroke="#E8470A" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-semibold text-gray-800">Orders over time</h3>
+              <p className="text-xs text-gray-500">Last 14 days</p>
+            </div>
+            <select className="h-9 w-32 px-3 rounded-lg border border-gray-200 text-xs text-gray-600 bg-white focus:outline-none">
+              <option>14 days</option>
+              <option>30 days</option>
+            </select>
+          </div>
+          {statsLoading ? (
+            <div className="h-44 rounded-lg bg-gray-50 animate-pulse" />
+          ) : (
+            <OrdersChart data={stats.orders_per_day || []} />
+          )}
         </div>
 
         <div className="bg-white border border-gray-100 rounded-xl p-5">
-          <p className="text-sm font-semibold text-gray-900 mb-4">Revenue (Last 7 Days)</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={stats.revenue_per_day}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d) => d.slice(5)} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtRevY} />
-              <Tooltip formatter={(v) => [formatNaira(v), 'Revenue']} />
-              <Line type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-semibold text-gray-800">Revenue by month</h3>
+              <p className="text-xs text-gray-500">2026 YTD</p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 text-brand ring-1 ring-orange-100 px-2 py-1 text-xs font-medium">
+              +14.7% vs '25
+            </span>
+          </div>
+          <RevenueBars />
         </div>
       </div>
 
-      {/* Activity feed */}
-      <div className="mt-8">
-        <p className="text-sm font-semibold text-gray-900 mb-4">Recent Activity</p>
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-          {activities.map(({ text, icon: Icon, bg, color, time }, i) => (
-            <div key={i} className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 last:border-b-0">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${bg}`}>
-                <Icon size={14} className={color} />
-              </div>
-              <span className="text-sm text-gray-700 flex-1">{text}</span>
-              <span className="text-xs text-gray-400 shrink-0">{time}</span>
-            </div>
-          ))}
-        </div>
+      <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <RecentOrdersTable orders={orders} />
+        <PendingKycQueue users={pendingKyc} />
       </div>
     </div>
   )
