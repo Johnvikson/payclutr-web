@@ -2,19 +2,49 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import AuthHeroPanel from '../../components/layout/AuthHeroPanel.jsx'
+import Logo from '../../components/ui/Logo.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
 import { useToast } from '../../components/ui/Toast.jsx'
 import { register as apiRegister } from '../../api/endpoints.js'
 
-function validate(f) {
-  const e = {}
-  if (!f.firstName || f.firstName.trim().length < 2) e.firstName = 'At least 2 characters'
-  if (!f.lastName  || f.lastName.trim().length  < 2) e.lastName  = 'At least 2 characters'
-  if (!f.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Enter a valid email'
-  if (!f.phone || !/^0\d{10}$/.test(f.phone)) e.phone = '11 digits starting with 0'
-  if (!f.password || f.password.length < 8) e.password = 'At least 8 characters'
-  if (f.confirmPassword !== f.password) e.confirmPassword = 'Passwords do not match'
-  return e
+function validate(fields) {
+  const errors = {}
+  if (!fields.firstName || fields.firstName.trim().length < 2) errors.firstName = 'At least 2 characters'
+  if (!fields.lastName || fields.lastName.trim().length < 2) errors.lastName = 'At least 2 characters'
+  if (!fields.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) errors.email = 'Enter a valid email'
+  if (!fields.phone || !/^0\d{10}$/.test(fields.phone)) errors.phone = '11 digits starting with 0'
+  if (!fields.password || fields.password.length < 8) errors.password = 'At least 8 characters'
+  if (fields.confirmPassword !== fields.password) errors.confirmPassword = 'Passwords do not match'
+  return errors
+}
+
+function GoogleButton({ label }) {
+  return (
+    <button
+      type="button"
+      disabled
+      title="Google sign-up is not connected yet"
+      className="w-full h-11 rounded-lg border border-gray-200 bg-white text-gray-400 flex items-center justify-center gap-3 text-sm font-medium cursor-not-allowed"
+    >
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+        <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z" />
+        <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z" />
+        <path fill="#FBBC05" d="M3.96 10.71A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.17.28-1.71V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3-2.33z" />
+        <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z" />
+      </svg>
+      {label}
+    </button>
+  )
+}
+
+function OrDivider() {
+  return (
+    <div className="flex items-center gap-3 my-4">
+      <div className="flex-1 h-px bg-gray-100" />
+      <span className="text-[11px] uppercase tracking-wider text-gray-400">or</span>
+      <div className="flex-1 h-px bg-gray-100" />
+    </div>
+  )
 }
 
 export default function RegisterPage() {
@@ -22,25 +52,36 @@ export default function RegisterPage() {
   const { login: storeAuth } = useAuth()
   const { showToast } = useToast()
 
-  const [fields, setFields] = useState({ firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' })
-  const [errors, setErrors]       = useState({})
-  const [showPw, setShowPw]       = useState(false)
-  const [showCPw, setShowCPw]     = useState(false)
-  const [loading, setLoading]     = useState(false)
+  const [fields, setFields] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  })
+  const [errors, setErrors] = useState({})
+  const [showPw, setShowPw] = useState(false)
+  const [showCPw, setShowCPw] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const set = (key) => (e) => setFields((p) => ({ ...p, [key]: e.target.value }))
+  const set = (key) => (event) => setFields((prev) => ({ ...prev, [key]: event.target.value }))
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    const errs = validate(fields)
-    setErrors(errs)
-    if (Object.keys(errs).length) return
+  async function handleSubmit(event) {
+    event.preventDefault()
+    const nextErrors = validate(fields)
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
+
     setLoading(true)
     try {
       const { user, token, refresh } = await apiRegister({
-        first_name: fields.firstName, last_name: fields.lastName,
-        email: fields.email, phone: fields.phone,
-        password: fields.password, password2: fields.confirmPassword,
+        first_name: fields.firstName,
+        last_name: fields.lastName,
+        email: fields.email,
+        phone: fields.phone,
+        password: fields.password,
+        password2: fields.confirmPassword,
       })
       storeAuth(user, token, refresh)
       navigate('/verify-otp')
@@ -52,100 +93,145 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <AuthHeroPanel />
-
-      <div className="flex-1 flex items-center justify-center bg-white overflow-y-auto py-12 px-6">
+    <div className="flex min-h-screen bg-gray-50">
+      <div className="flex-1 lg:w-2/5 lg:flex-none flex items-center justify-center p-6 lg:p-12 bg-white overflow-y-auto">
         <div className="w-full max-w-sm">
-
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-7 h-7 bg-brand-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xs font-bold">P</span>
-            </div>
-            <span className="text-base font-bold text-gray-900">PayClutr</span>
+          <div className="mb-8 lg:hidden flex justify-center">
+            <Logo size="lg" />
+          </div>
+          <div className="hidden lg:block mb-10">
+            <Logo size="md" />
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-1">Create account</h1>
-          <p className="text-sm text-gray-400 mb-8">Join PayClutr and start buying & selling safely</p>
+          <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
+          <p className="text-sm text-gray-500 mt-1">Start buying and selling on PayClutr</p>
 
-          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-3">
+            <GoogleButton label="Sign up with Google" />
+            <OrDivider />
+
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="form-label">First Name</label>
-                <input type="text" value={fields.firstName} onChange={set('firstName')} placeholder="Victor"
-                  className={`input-field ${errors.firstName ? 'input-error' : ''}`} />
+                <label className="form-label">First name</label>
+                <input
+                  type="text"
+                  value={fields.firstName}
+                  onChange={set('firstName')}
+                  placeholder="Emeka"
+                  className={`input-field ${errors.firstName ? 'input-error' : ''}`}
+                />
                 {errors.firstName && <p className="form-error">{errors.firstName}</p>}
               </div>
               <div>
-                <label className="form-label">Last Name</label>
-                <input type="text" value={fields.lastName} onChange={set('lastName')} placeholder="Johnson"
-                  className={`input-field ${errors.lastName ? 'input-error' : ''}`} />
+                <label className="form-label">Last name</label>
+                <input
+                  type="text"
+                  value={fields.lastName}
+                  onChange={set('lastName')}
+                  placeholder="Obi"
+                  className={`input-field ${errors.lastName ? 'input-error' : ''}`}
+                />
                 {errors.lastName && <p className="form-error">{errors.lastName}</p>}
               </div>
             </div>
 
             <div>
-              <label className="form-label">Email Address</label>
-              <input type="email" value={fields.email} onChange={set('email')} placeholder="you@example.com" autoComplete="email"
-                className={`input-field ${errors.email ? 'input-error' : ''}`} />
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                value={fields.email}
+                onChange={set('email')}
+                placeholder="you@email.com"
+                autoComplete="email"
+                className={`input-field ${errors.email ? 'input-error' : ''}`}
+              />
               {errors.email && <p className="form-error">{errors.email}</p>}
             </div>
 
             <div>
-              <label className="form-label">Phone Number</label>
-              <input type="tel" value={fields.phone} onChange={set('phone')} placeholder="08012345678" maxLength={11}
-                className={`input-field ${errors.phone ? 'input-error' : ''}`} />
+              <label className="form-label">Phone number</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pr-3 border-r border-gray-200 pointer-events-none">
+                  +234
+                </span>
+                <input
+                  type="tel"
+                  value={fields.phone}
+                  onChange={set('phone')}
+                  placeholder="08012345678"
+                  maxLength={11}
+                  className={`input-field pl-[4.6rem] ${errors.phone ? 'input-error' : ''}`}
+                />
+              </div>
               {errors.phone && <p className="form-error">{errors.phone}</p>}
             </div>
 
             <div>
               <label className="form-label">Password</label>
               <div className="relative">
-                <input type={showPw ? 'text' : 'password'} value={fields.password} onChange={set('password')}
-                  placeholder="At least 8 characters" autoComplete="new-password"
-                  className={`input-field pr-10 ${errors.password ? 'input-error' : ''}`} />
-                <button type="button" onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  value={fields.password}
+                  onChange={set('password')}
+                  placeholder="Create a password"
+                  autoComplete="new-password"
+                  className={`input-field pr-10 ${errors.password ? 'input-error' : ''}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((value) => !value)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
               {errors.password && <p className="form-error">{errors.password}</p>}
+              {!errors.password && <p className="text-xs text-gray-500 mt-1">Minimum 8 characters.</p>}
             </div>
 
             <div>
-              <label className="form-label">Confirm Password</label>
+              <label className="form-label">Confirm password</label>
               <div className="relative">
-                <input type={showCPw ? 'text' : 'password'} value={fields.confirmPassword} onChange={set('confirmPassword')}
-                  placeholder="Re-enter your password" autoComplete="new-password"
-                  className={`input-field pr-10 ${errors.confirmPassword ? 'input-error' : ''}`} />
-                <button type="button" onClick={() => setShowCPw((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                <input
+                  type={showCPw ? 'text' : 'password'}
+                  value={fields.confirmPassword}
+                  onChange={set('confirmPassword')}
+                  placeholder="Repeat your password"
+                  autoComplete="new-password"
+                  className={`input-field pr-10 ${errors.confirmPassword ? 'input-error' : ''}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCPw((value) => !value)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
                   {showCPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
               {errors.confirmPassword && <p className="form-error">{errors.confirmPassword}</p>}
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-2.5 mt-1">
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Creating account…
-                </span>
-              ) : 'Create Account'}
+            <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-2.5">
+              {loading ? 'Creating account...' : 'Create account'}
             </button>
+
+            <p className="text-xs text-gray-500 text-center leading-relaxed mt-3">
+              By creating an account you agree to PayClutr&apos;s Terms and Privacy Policy.
+            </p>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-400">
-            Already have an account?{' '}
-            <Link to="/login" className="text-brand-500 hover:text-brand-600 font-semibold">Sign in</Link>
-          </p>
+          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link to="/login" className="text-brand-500 hover:text-brand-600 font-semibold">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
+
+      <AuthHeroPanel />
     </div>
   )
 }
