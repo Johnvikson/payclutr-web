@@ -3,7 +3,7 @@ import { Outlet, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Tag, ShoppingBag,
   AlertTriangle, Wallet, Settings, BarChart2,
-  Shield, LogOut, Menu, ShieldCheck,
+  Shield, LogOut, Menu,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
 
@@ -28,9 +28,11 @@ function AdminSidebar({ onClose }) {
       {/* Logo */}
       <div className="px-5 h-14 flex items-center shrink-0 border-b border-gray-800">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-brand-500 rounded-lg flex items-center justify-center">
-            <ShieldCheck size={15} className="text-white" />
-          </div>
+          <img
+            src="/payclutr-mark-rounded.png"
+            alt="PayClutr"
+            className="w-7 h-7 rounded-lg object-contain shrink-0"
+          />
           <div>
             <p className="text-sm font-bold text-white leading-none">PayClutr</p>
             <p className="text-[9px] text-gray-500 mt-0.5">Admin</p>
@@ -40,24 +42,28 @@ function AdminSidebar({ onClose }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {adminNav.map(({ to, icon: Icon, label, exact }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={exact}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                isActive
-                  ? 'bg-brand-500/15 text-brand-400'
-                  : 'text-gray-400 hover:bg-gray-800/60 hover:text-gray-200'
-              }`
-            }
-          >
-            <Icon size={15} />
-            {label}
-          </NavLink>
-        ))}
+        {adminNav.map((item) => {
+          const NavIcon = item.icon
+
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.exact}
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'bg-brand-500/15 text-brand-400'
+                    : 'text-gray-400 hover:bg-gray-800/60 hover:text-gray-200'
+                }`
+              }
+            >
+              <NavIcon size={15} />
+              {item.label}
+            </NavLink>
+          )
+        })}
       </nav>
 
       {/* Logout */}
