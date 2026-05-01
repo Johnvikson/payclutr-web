@@ -48,6 +48,36 @@ function RoleBadge({ role }) {
   )
 }
 
+function relativeTime(value) {
+  if (!value) return '-'
+  const timestamp = new Date(value).getTime()
+  if (Number.isNaN(timestamp)) return '-'
+  const diff = Math.max(0, Date.now() - timestamp)
+  const minute = 60 * 1000
+  const hour = 60 * minute
+  const day = 24 * hour
+
+  if (diff < minute) return 'Just now'
+  if (diff < hour) {
+    const count = Math.max(1, Math.floor(diff / minute))
+    return `${count} minute${count === 1 ? '' : 's'} ago`
+  }
+  if (diff < day) {
+    const count = Math.max(1, Math.floor(diff / hour))
+    return `${count} hour${count === 1 ? '' : 's'} ago`
+  }
+  const count = Math.max(1, Math.floor(diff / day))
+  return `${count} day${count === 1 ? '' : 's'} ago`
+}
+
+function displayLocation(user, compact = false) {
+  const savedLocation = user.last_seen_location || ''
+  if (savedLocation) return compact ? savedLocation.split(',')[0].trim() : savedLocation
+  const place = user.city || user.state || ''
+  if (!place) return '-'
+  return compact ? place : `${place}, NG`
+}
+
 function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge }) {
   const [tab, setTab] = useState('overview')
 
@@ -66,6 +96,13 @@ function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge
 
   const orders = ordersData?.data ?? []
   const listings = listingsData?.data ?? []
+  const lastSeenTime = user.last_seen_at || user.last_login || user.updated_at
+  const lastSeenLocation = displayLocation(user, true)
+  const deviceLocation = displayLocation(user)
+  const sessionRows = [
+    ['Last seen', `${relativeTime(lastSeenTime)}${lastSeenLocation !== '-' ? ` · ${lastSeenLocation}` : ''}`],
+    ['Device', `${user.last_seen_device || 'Unknown device'}${deviceLocation !== '-' ? ` · ${deviceLocation}` : ''}`],
+  ]
   const stats = [
     { label: 'Lifetime sales', value: formatNaira((Number(user.wallet_balance || 0) || 0) * 1.8) },
     { label: 'Orders', value: String((user.total_sales || 0) + (user.total_purchases || 0)) },
@@ -163,8 +200,7 @@ function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge
                       ['Phone', user.phone || '-'],
                       ['Wallet balance', formatNaira(user.wallet_balance || 0)],
                       ['Bank', user.virtual_account?.bank_name || '-'],
-                      ['Last seen', user.updated_at ? formatDate(user.updated_at) : '-'],
-                      ['Location', [user.city, user.state].filter(Boolean).join(', ') || '-'],
+                      ...sessionRows,
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-center justify-between py-1.5 text-sm">
                         <span className="text-gray-500">{label}</span>
