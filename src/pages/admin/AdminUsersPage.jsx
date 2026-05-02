@@ -96,12 +96,12 @@ function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge
 
   const orders = ordersData?.data ?? []
   const listings = listingsData?.data ?? []
-  const lastSeenTime = user.last_seen_at || user.last_login || user.updated_at
+  const lastSeenTime = user.last_seen_at || user.last_login || user.updated_at || user.created_at
   const lastSeenLocation = displayLocation(user, true)
   const deviceLocation = displayLocation(user)
   const sessionRows = [
-    ['Last seen', `${relativeTime(lastSeenTime)}${lastSeenLocation !== '-' ? ` · ${lastSeenLocation}` : ''}`],
-    ['Device', `${user.last_seen_device || 'Unknown device'}${deviceLocation !== '-' ? ` · ${deviceLocation}` : ''}`],
+    ['Last seen', `${relativeTime(lastSeenTime)}${lastSeenLocation !== '-' ? ` \u00b7 ${lastSeenLocation}` : ''}`],
+    ['Device', `${user.last_seen_device || 'Not captured yet'}${deviceLocation !== '-' ? ` \u00b7 ${deviceLocation}` : ''}`],
   ]
   const stats = [
     { label: 'Lifetime sales', value: formatNaira((Number(user.wallet_balance || 0) || 0) * 1.8) },
