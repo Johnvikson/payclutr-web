@@ -96,6 +96,7 @@ function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge
 
   const orders = ordersData?.data ?? []
   const listings = listingsData?.data ?? []
+  const listingsCount = listingsData?.total ?? listings.length
   const lastSeenTime = user.last_seen_at || user.last_login || user.updated_at || user.created_at
   const lastSeenLocation = displayLocation(user, true)
   const deviceLocation = displayLocation(user)
@@ -107,7 +108,7 @@ function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge
     { label: 'Lifetime sales', value: formatNaira((Number(user.wallet_balance || 0) || 0) * 1.8) },
     { label: 'Orders', value: String((user.total_sales || 0) + (user.total_purchases || 0)) },
     { label: 'Disputes', value: String(user.dispute_count ?? 0) },
-    { label: 'Listings', value: user.role === 'seller' ? String(listings.length || user.total_sales || 0) : '-' },
+    { label: 'Listings', value: String(listingsCount) },
   ]
   const verificationItems = [
     { label: 'Email', status: user.email_verified ? 'verified' : 'pending', icon: Mail },
