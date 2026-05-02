@@ -96,7 +96,8 @@ function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge
 
   const orders = ordersData?.data ?? []
   const listings = listingsData?.data ?? []
-  const listingsCount = listingsData?.total ?? listings.length
+  const userListings = listings.filter((listing) => String(listing.seller?.id) === String(user.id))
+  const listingsCount = userListings.length
   const lastSeenTime = user.last_seen_at || user.last_login || user.updated_at || user.created_at
   const lastSeenLocation = displayLocation(user, true)
   const deviceLocation = displayLocation(user)
