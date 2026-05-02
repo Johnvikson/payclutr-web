@@ -17,11 +17,10 @@ import { uploadImage } from '../../lib/supabase.js'
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 const DOCUMENT_TYPES = [
-  { value: 'nin_slip', label: 'NIN slip' },
-  { value: 'national_id', label: 'National ID card' },
+  { value: 'nin', label: 'NIN' },
   { value: 'voters_card', label: "Voter's card" },
   { value: 'drivers_license', label: "Driver's license" },
-  { value: 'international_passport', label: 'International passport' },
+  { value: 'passport', label: 'Passport' },
 ]
 
 const STATUS_CONFIG = {
@@ -340,7 +339,7 @@ export default function KycPage() {
               <>
                 <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Upload government ID</h3>
                 <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
-                  Use a clear photo of the front and back of your NIN slip, national ID, voter's card, driver's license, or passport.
+                  Use a clear photo of the front and back of your NIN, voter's card, driver's license, or passport.
                 </p>
 
                 <div className="mt-4">

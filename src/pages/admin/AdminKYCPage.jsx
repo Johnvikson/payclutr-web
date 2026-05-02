@@ -14,11 +14,10 @@ const TABS = [
 ]
 
 const DOCUMENT_LABELS = {
-  nin_slip: 'NIN slip',
-  national_id: 'National ID card',
+  nin: 'NIN',
   voters_card: "Voter's card",
   drivers_license: "Driver's license",
-  international_passport: 'International passport',
+  passport: 'Passport',
 }
 
 function fullName(user) {
