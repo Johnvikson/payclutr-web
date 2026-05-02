@@ -57,6 +57,7 @@ export default function RegisterPage() {
     lastName: '',
     email: '',
     phone: '',
+    role: 'buyer',
     password: '',
     confirmPassword: '',
   })
@@ -80,6 +81,7 @@ export default function RegisterPage() {
         last_name: fields.lastName,
         email: fields.email,
         phone: fields.phone,
+        role: fields.role,
         password: fields.password,
         password2: fields.confirmPassword,
       })
@@ -109,6 +111,30 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-3">
             <GoogleButton label="Sign up with Google" />
             <OrDivider />
+
+            <div>
+              <label className="form-label">Account type</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ['buyer', 'Buyer'],
+                  ['seller', 'Seller'],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setFields((prev) => ({ ...prev, role: value }))}
+                    className={[
+                      'h-10 rounded-lg border text-sm font-medium transition-colors',
+                      fields.role === value
+                        ? 'border-brand-500 bg-orange-50 text-brand'
+                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50',
+                    ].join(' ')}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
