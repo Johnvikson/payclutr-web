@@ -83,7 +83,7 @@ function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge
 
   const { data: ordersData } = useQuery({
     queryKey: ['admin-user-drawer-orders', user?.id],
-    queryFn: () => getAdminOrders({ buyer: user.id }),
+    queryFn: () => getAdminOrders({ seller: user.id }),
     enabled: !!user?.id,
   })
   const { data: listingsData } = useQuery({
@@ -95,6 +95,9 @@ function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge
   if (!user) return null
 
   const orders = ordersData?.data ?? []
+  const sellerOrders = orders.filter((order) => String(order.seller?.id) === String(user.id))
+  const completedSellerOrders = sellerOrders.filter((order) => order.status === 'completed')
+  const lifetimeSales = completedSellerOrders.reduce((sum, order) => sum + Number(order.seller_payout || order.item_price || 0), 0)
   const listings = listingsData?.data ?? []
   const userListings = listings.filter((listing) => String(listing.seller?.id) === String(user.id))
   const listingsCount = userListings.length
@@ -106,8 +109,8 @@ function UserDrawer({ user, onClose, onBan, onUnban, onAwardBadge, onRevokeBadge
     ['Device', `${user.last_seen_device || 'Not captured yet'}${deviceLocation !== '-' ? ` \u00b7 ${deviceLocation}` : ''}`],
   ]
   const stats = [
-    { label: 'Lifetime sales', value: formatNaira((Number(user.wallet_balance || 0) || 0) * 1.8) },
-    { label: 'Orders', value: String((user.total_sales || 0) + (user.total_purchases || 0)) },
+    { label: 'Lifetime sales', value: formatNaira(lifetimeSales) },
+    { label: 'Orders', value: String(sellerOrders.length) },
     { label: 'Disputes', value: String(user.dispute_count ?? 0) },
     { label: 'Listings', value: String(listingsCount) },
   ]
