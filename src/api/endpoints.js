@@ -3,6 +3,7 @@ import client from './client.js'
 // ── Auth ───────────────────────────────────────────────────────────────────────
 export const login = (data) => client.post('/auth/login/', data)
 export const register = (data) => client.post('/auth/register/', data)
+export const googleAuth = (data) => client.post('/auth/google/', data)
 export const logout = (data) => client.post('/auth/logout/', data)
 export const refreshToken = (data) => client.post('/auth/token/refresh/', data)
 
