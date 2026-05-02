@@ -6,19 +6,18 @@ import { formatNaira } from '../../utils/formatters.js'
 import { NIGERIAN_BANKS } from '../../utils/constants.js'
 import LoadingButton from '../ui/LoadingButton.jsx'
 
-export default function WithdrawalModal({ isOpen, onClose, balance }) {
+export default function WithdrawalModal({ isOpen, onClose, balance, user }) {
   const [step, setStep] = useState(1)
   const [amount, setAmount] = useState('')
   const [bankName, setBankName] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
-  const [accountName, setAccountName] = useState('')
+  const accountName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim()
 
   const qc = useQueryClient()
 
   const amountNaira = parseFloat(amount || 0)
   const amountKobo = Math.round(amountNaira * 100)
   const minNaira = 1000
-  const maxNaira = balance / 100
   const amountValid = amountNaira >= minNaira && amountKobo <= balance
 
   const mutation = useMutation({
@@ -41,7 +40,6 @@ export default function WithdrawalModal({ isOpen, onClose, balance }) {
       setAmount('')
       setBankName('')
       setAccountNumber('')
-      setAccountName('')
       mutation.reset()
     }, 300)
   }
@@ -131,10 +129,12 @@ export default function WithdrawalModal({ isOpen, onClose, balance }) {
                 <input
                   type="text"
                   value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  placeholder="Name as on bank account"
-                  className="w-full h-11 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#E8470A] transition-colors"
+                  readOnly
+                  className="w-full h-11 px-3 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-700"
                 />
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Withdrawals must go to a bank account with this exact name.
+                </p>
               </div>
 
               {/* Summary */}
@@ -167,7 +167,7 @@ export default function WithdrawalModal({ isOpen, onClose, balance }) {
                 <LoadingButton
                   onClick={() => mutation.mutate()}
                   isLoading={mutation.isPending}
-                  disabled={!bankName || accountNumber.length !== 10 || !accountName.trim()}
+                  disabled={!bankName || accountNumber.length !== 10 || !accountName}
                   className="flex-1 py-2.5 text-sm font-medium text-white rounded-lg disabled:opacity-40 hover:bg-[#c93d09] transition-colors"
                   style={{ backgroundColor: '#E8470A' }}
                 >

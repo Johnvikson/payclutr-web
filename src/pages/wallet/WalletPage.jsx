@@ -14,7 +14,7 @@ import Badge from '../../components/ui/Badge.jsx'
 import { Field, TextInput } from '../../components/ui/Field.jsx'
 import WithdrawalModal from '../../components/wallet/WithdrawalModal.jsx'
 
-const TABS = [
+const BASE_TABS = [
   { key: 'transactions', label: 'Transactions' },
   { key: 'withdrawals',  label: 'Withdrawals' },
 ]
@@ -22,11 +22,13 @@ const TABS = [
 // ─── Deposit account block (3 states: empty / pending / active) ─────────────
 function DepositAccount() {
   const { showToast } = useToast()
+  const { user } = useAuth()
   const qc = useQueryClient()
   const [bvn, setBvn] = useState('')
   const [bvnError, setBvnError] = useState('')
   const [copied, setCopied] = useState(false)
   const [pending, setPending] = useState(false)
+  const accountOwnerName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim()
 
   const { data: account, isLoading } = useQuery({
     queryKey: ['deposit-account'],
@@ -117,7 +119,7 @@ function DepositAccount() {
           </div>
         </div>
         <p className="mt-3 text-[11px] text-gray-500 dark:text-zinc-500">
-          Only transfers from your personal bank account matching your name will be accepted.
+          Only transfers from a bank account matching {accountOwnerName || 'your PayClutr name'} should be used.
         </p>
       </div>
     )
@@ -156,6 +158,7 @@ function DepositAccount() {
       </p>
       <p className="mt-1 text-xs text-gray-500 dark:text-zinc-500">
         Only transfers from your personal bank account matching your name will be accepted.
+        Your bank account name should match {accountOwnerName || 'your PayClutr name'}.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-4 flex flex-col sm:flex-row gap-2">
@@ -279,9 +282,12 @@ export default function WalletPage() {
   })
 
   const balance      = wallet?.balance ?? user?.wallet_balance ?? 0
-  const canWithdraw  = balance > 0 && user?.kyc_status === 'verified'
+  const isSeller     = user?.role === 'seller'
+  const canWithdraw  = isSeller && balance > 0 && user?.kyc_status === 'verified'
   const transactions = wallet?.transactions || []
   const withdrawals  = wallet?.withdrawals  || []
+  const tabs = isSeller ? BASE_TABS : BASE_TABS.filter((tab) => tab.key !== 'withdrawals')
+  const visibleTab = isSeller ? activeTab : 'transactions'
 
   return (
     <div className="bg-gray-50 dark:bg-zinc-950 min-h-[calc(100vh-3.5rem)]">
@@ -311,16 +317,18 @@ export default function WalletPage() {
           </div>
 
           <div className="relative mt-5 flex flex-wrap gap-2">
-            {canWithdraw ? (
-              <Button onClick={() => setShowWithdraw(true)} icon={ArrowUpRight}>
-                Withdraw
-              </Button>
-            ) : user?.kyc_status === 'verified' ? (
-              <Button disabled icon={ArrowUpRight}>Withdraw</Button>
-            ) : (
-              <Link to="/kyc">
-                <Button>Verify identity to withdraw</Button>
-              </Link>
+            {isSeller && (
+              canWithdraw ? (
+                <Button onClick={() => setShowWithdraw(true)} icon={ArrowUpRight}>
+                  Withdraw
+                </Button>
+              ) : user?.kyc_status === 'verified' ? (
+                <Button disabled icon={ArrowUpRight}>Withdraw</Button>
+              ) : (
+                <Link to="/kyc">
+                  <Button>Verify identity to withdraw</Button>
+                </Link>
+              )
             )}
             <button
               type="button"
@@ -339,12 +347,12 @@ export default function WalletPage() {
 
         {/* ── Tabs ─────────────────────────────────────────────────────────── */}
         <div className="mt-6 border-b border-gray-200 dark:border-zinc-800 flex gap-1">
-          {TABS.map(({ key, label }) => (
+          {tabs.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
               className={`px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                activeTab === key
+                visibleTab === key
                   ? 'border-brand text-brand'
                   : 'border-transparent text-gray-500 dark:text-zinc-500 hover:text-gray-900 dark:hover:text-zinc-100'
               }`}
@@ -356,7 +364,7 @@ export default function WalletPage() {
 
         {/* ── List ────────────────────────────────────────────────────────── */}
         <div className="mt-3 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl divide-y divide-gray-100 dark:divide-zinc-800 overflow-hidden">
-          {activeTab === 'transactions' ? (
+          {visibleTab === 'transactions' ? (
             transactions.length === 0 ? (
               <EmptyList
                 title="No transactions yet"
@@ -380,6 +388,7 @@ export default function WalletPage() {
         isOpen={showWithdraw}
         onClose={() => setShowWithdraw(false)}
         balance={balance}
+        user={user}
       />
     </div>
   )
