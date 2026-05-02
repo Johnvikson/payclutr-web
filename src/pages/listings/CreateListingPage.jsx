@@ -2,12 +2,12 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Camera, X, UploadCloud, AlertCircle, Truck, Package, Zap, MapPin,
+  Camera, X, UploadCloud, AlertCircle, Truck, Package, Zap, MapPin, Film,
 } from 'lucide-react'
 import { useToast } from '../../components/ui/Toast.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
 import { createListing, updateListing, getListing } from '../../api/endpoints.js'
-import { uploadImage } from '../../lib/supabase.js'
+import { uploadImage, uploadVideo } from '../../lib/supabase.js'
 import { CATEGORIES, NIGERIAN_STATES } from '../../utils/constants.js'
 
 import Button from '../../components/ui/Button.jsx'
@@ -60,7 +60,7 @@ const SHIP_METHODS = [
 
 const EMPTY_FORM = {
   title: '', description: '', category: '', condition: '', price: '',
-  photos: [],
+  photos: [], video: null,
   shipping_park: false,
   shipping_gig: false, gig_confirmed: false,
   shipping_bolt_indrive: false, bolt_confirmed: false,
@@ -83,6 +83,7 @@ export default function CreateListingPage() {
   const { showToast } = useToast()
   const { user } = useAuth()
   const fileInputRef = useRef(null)
+  const videoInputRef = useRef(null)
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
@@ -138,6 +139,9 @@ export default function CreateListingPage() {
         is_primary: img.is_primary ?? i === 0,
         sort_order: img.sort_order ?? i,
       })),
+      video: existing.video_url
+        ? { existing: true, url: existing.video_url, preview: existing.video_url }
+        : null,
     }))
   }, [existing])
 
@@ -167,6 +171,41 @@ export default function CreateListingPage() {
     setForm((p) => ({ ...p, photos: p.photos.filter((_, i) => i !== idx) }))
   }
 
+  const addVideo = useCallback((file) => {
+    if (!file) return
+    if (!file.type.startsWith('video/')) {
+      setErrors((p) => ({ ...p, video: 'Upload a valid video file' }))
+      return
+    }
+    if (file.size > 80 * 1024 * 1024) {
+      setErrors((p) => ({ ...p, video: 'Video must be 80MB or smaller' }))
+      return
+    }
+    const preview = URL.createObjectURL(file)
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(video.src)
+      if (video.duration > 30.5) {
+        URL.revokeObjectURL(preview)
+        setErrors((p) => ({ ...p, video: 'Product video must be 30 seconds or less' }))
+        return
+      }
+      setForm((p) => ({ ...p, video: { file, preview, duration: video.duration } }))
+      setErrors((p) => ({ ...p, video: '' }))
+    }
+    video.onerror = () => {
+      URL.revokeObjectURL(preview)
+      setErrors((p) => ({ ...p, video: 'Could not read video duration' }))
+    }
+    video.src = preview
+  }, [])
+
+  const removeVideo = () => {
+    if (form.video?.preview && !form.video.existing) URL.revokeObjectURL(form.video.preview)
+    setForm((p) => ({ ...p, video: null }))
+  }
+
   // ── Validation ───────────────────────────────────────────────────────────
   const validate = () => {
     const e = {}
@@ -178,6 +217,7 @@ export default function CreateListingPage() {
       e.price = 'Enter a valid price'
     }
     if (form.photos.length < 2)   e.photos      = 'Add at least 2 photos'
+    if (!form.video)              e.video       = 'Upload a product video up to 30 seconds'
     if (!SHIP_METHODS.some((m) => form[m.key])) {
       e.shipping = 'Select at least one shipping method'
     }
@@ -207,11 +247,13 @@ export default function CreateListingPage() {
           return { image_url: url, is_primary: i === 0, sort_order: i }
         })
       )
-      const { photos: _photos, ...rest } = form
+      const videoUrl = form.video.existing ? form.video.url : await uploadVideo(form.video.file)
+      const { photos: _photos, video: _video, ...rest } = form
       const payload = {
         ...rest,
         price: Math.round(Number(form.price) * 100),
         images: uploadedImages,
+        video_url: videoUrl,
       }
       const result = isEditing
         ? await updateListing(id, payload)
@@ -331,6 +373,59 @@ export default function CreateListingPage() {
 
           {/* ── Photos ─────────────────────────────────────────────── */}
           <Card>
+            <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Product video</h3>
+            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1 mb-4">
+              Upload one clear video of the item. MP4, MOV, or WEBM - maximum 30 seconds.
+            </p>
+
+            {!form.video ? (
+              <button
+                type="button"
+                onClick={() => videoInputRef.current?.click()}
+                className={`w-full h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors ${
+                  errors.video
+                    ? 'border-red-300 dark:border-red-900'
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-brand hover:bg-orange-50/30 dark:hover:bg-orange-950/10'
+                } text-gray-500 dark:text-zinc-400`}
+              >
+                <Film size={24} />
+                <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                  Click to upload product video
+                </div>
+                <div className="text-xs text-gray-400 dark:text-zinc-500">
+                  30 seconds max
+                </div>
+              </button>
+            ) : (
+              <div className="relative rounded-lg overflow-hidden bg-black">
+                <video src={form.video.preview} controls className="w-full aspect-video object-contain" />
+                <button
+                  type="button"
+                  onClick={removeVideo}
+                  className="absolute top-2 right-2 w-7 h-7 bg-black/70 rounded-full flex items-center justify-center hover:bg-black/90 transition-colors"
+                  aria-label="Remove video"
+                >
+                  <X size={14} className="text-white" />
+                </button>
+              </div>
+            )}
+
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/mp4,video/quicktime,video/webm"
+              className="hidden"
+              onChange={(e) => addVideo(e.target.files?.[0])}
+            />
+
+            {errors.video && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-red-600">
+                <AlertCircle size={14} /> {errors.video}
+              </div>
+            )}
+          </Card>
+
+          <Card>
             <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Photos</h3>
             <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1 mb-4">
               Add up to 8 photos. The first photo is your cover. JPG, PNG, WEBP — max 5MB each.
@@ -419,7 +514,9 @@ export default function CreateListingPage() {
             )}
 
             <div className="space-y-3">
-              {SHIP_METHODS.map(({ key, icon: Icon, label, sub, note, confirmKey, confirmLabel }) => {
+              {SHIP_METHODS.map((method) => {
+                const { key, label, sub, note, confirmKey, confirmLabel } = method
+                const ShippingIcon = method.icon
                 const on = form[key]
                 return (
                   <div
@@ -440,7 +537,7 @@ export default function CreateListingPage() {
                           ? 'bg-brand text-white'
                           : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400'
                       }`}>
-                        <Icon size={16} />
+                        <ShippingIcon size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-gray-900 dark:text-zinc-100">{label}</div>

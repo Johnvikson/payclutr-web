@@ -137,6 +137,16 @@ export default function ListingDetailPage() {
                   ))}
                 </div>
               )}
+              {listing.video_url && (
+                <div className="border-t border-gray-100 dark:border-zinc-800 p-3">
+                  <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-2">Product video</div>
+                  <video
+                    src={listing.video_url}
+                    controls
+                    className="w-full rounded-lg bg-black aspect-video object-contain"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Title + price */}
