@@ -19,8 +19,7 @@ function fullName(user) {
 
 function idLabel(user) {
   if (user?.nin) return user.nin
-  if (user?.bvn) return user.bvn
-  return 'No ID'
+  return 'No NIN'
 }
 
 function EmptyState({ tab }) {
@@ -156,7 +155,7 @@ export default function AdminKYCPage() {
               <tr>
                 <th className="text-left font-medium px-5 py-3">User</th>
                 <th className="text-left font-medium px-5 py-3">Email</th>
-                <th className="text-left font-medium px-5 py-3">NIN / BVN</th>
+                <th className="text-left font-medium px-5 py-3">NIN</th>
                 <th className="text-left font-medium px-5 py-3">Selfie</th>
                 <th className="text-left font-medium px-5 py-3">Submitted</th>
                 <th className="text-right font-medium px-5 py-3">Actions</th>
