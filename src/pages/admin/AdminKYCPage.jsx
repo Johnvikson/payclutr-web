@@ -13,13 +13,40 @@ const TABS = [
   { key: 'rejected', label: 'Rejected' },
 ]
 
+const DOCUMENT_LABELS = {
+  nin_slip: 'NIN slip',
+  national_id: 'National ID card',
+  voters_card: "Voter's card",
+  drivers_license: "Driver's license",
+  international_passport: 'International passport',
+}
+
 function fullName(user) {
   return `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.email || 'User'
 }
 
-function idLabel(user) {
-  if (user?.nin) return user.nin
-  return 'No NIN'
+function documentLabel(user) {
+  return DOCUMENT_LABELS[user?.id_document_type] || 'No ID type'
+}
+
+function ImageLink({ href, label, user }) {
+  if (!href) {
+    return (
+      <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-[9px] text-gray-400">
+        None
+      </div>
+    )
+  }
+
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="block w-10 h-10">
+      <img
+        src={href}
+        alt={`${fullName(user)} ${label}`}
+        className="w-10 h-10 rounded object-cover hover:ring-2 hover:ring-brand-500"
+      />
+    </a>
+  )
 }
 
 function EmptyState({ tab }) {
@@ -53,7 +80,7 @@ function RejectModal({ user, loading, onConfirm, onClose }) {
             rows={3}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="e.g. Selfie does not match NIN photo. Please retake in good lighting."
+            placeholder="e.g. ID document is blurry or selfie does not match. Please retake in good lighting."
             className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 resize-none focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
           />
         </div>
@@ -155,8 +182,8 @@ export default function AdminKYCPage() {
               <tr>
                 <th className="text-left font-medium px-5 py-3">User</th>
                 <th className="text-left font-medium px-5 py-3">Email</th>
-                <th className="text-left font-medium px-5 py-3">NIN</th>
-                <th className="text-left font-medium px-5 py-3">Selfie</th>
+                <th className="text-left font-medium px-5 py-3">ID type</th>
+                <th className="text-left font-medium px-5 py-3">Documents</th>
                 <th className="text-left font-medium px-5 py-3">Submitted</th>
                 <th className="text-right font-medium px-5 py-3">Actions</th>
               </tr>
@@ -171,21 +198,16 @@ export default function AdminKYCPage() {
                     </div>
                   </td>
                   <td className="px-5 py-3 text-gray-600">{user.email}</td>
-                  <td className="px-5 py-3 font-mono text-xs text-gray-700 whitespace-nowrap">{idLabel(user)}</td>
                   <td className="px-5 py-3">
-                    {user.selfie_url ? (
-                      <a href={user.selfie_url} target="_blank" rel="noreferrer">
-                        <img
-                          src={user.selfie_url}
-                          alt={`${fullName(user)} selfie`}
-                          className="w-8 h-8 rounded object-cover hover:ring-2 hover:ring-brand-500"
-                        />
-                      </a>
-                    ) : (
-                      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-[9px] text-gray-400">
-                        None
-                      </div>
-                    )}
+                    <div className="text-xs font-medium text-gray-700 whitespace-nowrap">{documentLabel(user)}</div>
+                    {user.nin && <div className="mt-0.5 font-mono text-[11px] text-gray-400">{user.nin}</div>}
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <ImageLink href={user.id_front_url} label="ID front" user={user} />
+                      <ImageLink href={user.id_back_url} label="ID back" user={user} />
+                      <ImageLink href={user.selfie_url} label="selfie" user={user} />
+                    </div>
                   </td>
                   <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
                     {formatDate(user.kyc_submitted_at ?? user.created_at)}

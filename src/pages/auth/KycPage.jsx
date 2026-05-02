@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react'
+import { useRef, useState } from 'react'
 import {
   AlertCircle,
   Camera,
   Check,
   CheckCircle2,
   Clock,
+  FileImage,
   ShieldCheck,
   Upload,
 } from 'lucide-react'
@@ -14,6 +15,14 @@ import { submitKyc } from '../../api/endpoints.js'
 import { uploadImage } from '../../lib/supabase.js'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
+
+const DOCUMENT_TYPES = [
+  { value: 'nin_slip', label: 'NIN slip' },
+  { value: 'national_id', label: 'National ID card' },
+  { value: 'voters_card', label: "Voter's card" },
+  { value: 'drivers_license', label: "Driver's license" },
+  { value: 'international_passport', label: 'International passport' },
+]
 
 const STATUS_CONFIG = {
   verified: {
@@ -27,7 +36,7 @@ const STATUS_CONFIG = {
   pending: {
     Icon: Clock,
     title: 'Under review',
-    body: 'Your details are being reviewed. Check back in 24 hours.',
+    body: 'Your documents are being reviewed. Check back in 24 hours.',
     className: 'border-amber-200 bg-amber-50/70 text-amber-800 dark:border-amber-900/30 dark:bg-amber-900/10 dark:text-amber-200',
     iconClassName: 'text-amber-600',
     bodyClassName: 'text-amber-700 dark:text-amber-300',
@@ -47,7 +56,7 @@ function PageHeader() {
     <div>
       <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">Identity verification</h1>
       <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">
-        Verify your identity to sell on PayClutr and unlock higher transaction limits.
+        Upload a valid government ID and selfie for manual review.
       </p>
     </div>
   )
@@ -56,7 +65,6 @@ function PageHeader() {
 function StatusBanner({ status }) {
   const config = STATUS_CONFIG[status]
   if (!config) return null
-
   const StatusIcon = config.Icon
 
   return (
@@ -73,30 +81,28 @@ function StatusBanner({ status }) {
 function StepProgress({ step }) {
   return (
     <div className="mt-6 flex items-center gap-3">
-      {[1, 2].map((number) => (
+      {[1, 2, 3].map((number) => (
         <div key={number} className="contents">
           <div className="flex items-center gap-2">
             <div
               className={[
                 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold',
-                number <= step
-                  ? 'bg-brand text-white'
-                  : 'bg-gray-100 dark:bg-zinc-800 text-gray-400',
+                number <= step ? 'bg-brand text-white' : 'bg-gray-100 dark:bg-zinc-800 text-gray-400',
               ].join(' ')}
             >
               {number < step ? <Check size={12} strokeWidth={3} /> : number}
             </div>
             <div
               className={[
-                'text-sm font-medium',
+                'hidden sm:block text-sm font-medium',
                 number <= step ? 'text-gray-900 dark:text-zinc-100' : 'text-gray-400',
               ].join(' ')}
             >
-              Step {number} of 2
+              Step {number}
             </div>
           </div>
-          {number < 2 && (
-            <div className={`flex-1 h-px ${step > 1 ? 'bg-brand' : 'bg-gray-200 dark:bg-zinc-700'}`} />
+          {number < 3 && (
+            <div className={`flex-1 h-px ${step > number ? 'bg-brand' : 'bg-gray-200 dark:bg-zinc-700'}`} />
           )}
         </div>
       ))}
@@ -104,78 +110,161 @@ function StepProgress({ step }) {
   )
 }
 
+function readPreview(file, onLoad) {
+  const reader = new FileReader()
+  reader.onload = (event) => onLoad({ file, preview: event.target.result })
+  reader.readAsDataURL(file)
+}
+
+function UploadBox({ title, hint, value, error, inputRef, onFile, onClear, round = false }) {
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={onFile}
+        className="hidden"
+      />
+
+      {value ? (
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/70 dark:bg-zinc-800/40 p-4">
+          <div className="flex items-center gap-3">
+            <img
+              src={value.preview}
+              alt={`${title} preview`}
+              className={[
+                'shrink-0 object-cover border border-gray-200 dark:border-zinc-700',
+                round ? 'w-16 h-16 rounded-full' : 'w-20 h-14 rounded-lg',
+              ].join(' ')}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{value.file.name}</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-500">
+                {(value.file.size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </div>
+            <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+          </div>
+          <button
+            type="button"
+            onClick={onClear}
+            className="mt-3 text-xs text-red-600 hover:text-red-700 transition-colors"
+          >
+            Remove
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className={[
+            'w-full min-h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 px-4 transition-colors',
+            error
+              ? 'border-red-300 bg-red-50 dark:bg-red-900/10'
+              : 'border-gray-200 dark:border-zinc-700 hover:border-brand hover:bg-orange-50/30 dark:hover:bg-orange-950/10',
+          ].join(' ')}
+        >
+          <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-500 dark:text-zinc-400">
+            {round ? <Camera size={22} /> : <FileImage size={22} />}
+          </div>
+          <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">{title}</div>
+          <div className="text-xs text-gray-400 text-center">{hint}</div>
+          <div className="flex items-center gap-1.5 text-xs text-brand">
+            <Upload size={12} />
+            Choose file
+          </div>
+        </button>
+      )}
+
+      {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+    </div>
+  )
+}
+
 export default function KycPage() {
   const { user, updateUser } = useAuth()
   const { showToast } = useToast()
-  const fileInputRef = useRef(null)
+  const frontInputRef = useRef(null)
+  const backInputRef = useRef(null)
+  const selfieInputRef = useRef(null)
 
   const [step, setStep] = useState(1)
-  const [idNumber, setIdNumber] = useState('')
-  const [idError, setIdError] = useState('')
+  const [documentType, setDocumentType] = useState('nin_slip')
+  const [frontImage, setFrontImage] = useState(null)
+  const [backImage, setBackImage] = useState(null)
   const [selfie, setSelfie] = useState(null)
-  const [selfieError, setSelfieError] = useState('')
+  const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(user?.kyc_status === 'pending')
 
   const kycStatus = submitted ? 'pending' : user?.kyc_status
-  const canSubmit = idNumber.length === 11 && !!selfie && !loading
+  const canSubmit = !!documentType && !!frontImage && !!backImage && !!selfie && !loading
 
-  function handleIdNumberChange(e) {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 11)
-    setIdNumber(val)
-    setIdError('')
-  }
-
-  function validateNin() {
-    if (idNumber.length !== 11) {
-      setIdError('NIN must be exactly 11 digits')
-      return false
+  function handleImage(field, setter) {
+    return (event) => {
+      const file = event.target.files?.[0]
+      if (!file) return
+      if (!file.type.startsWith('image/')) {
+        setErrors((current) => ({ ...current, [field]: 'Please upload an image file.' }))
+        return
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setErrors((current) => ({ ...current, [field]: 'Image must be less than 5MB.' }))
+        return
+      }
+      readPreview(file, setter)
+      setErrors((current) => ({ ...current, [field]: '' }))
     }
-    return true
   }
 
-  function goToSelfieStep() {
-    if (!validateNin()) return
-    setStep(2)
+  function clearImage(field, setter, inputRef) {
+    setter(null)
+    if (inputRef.current) inputRef.current.value = ''
+    setErrors((current) => ({ ...current, [field]: '' }))
   }
 
-  function handleFileChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      setSelfieError('Please upload an image file.')
+  function validateDocuments() {
+    const nextErrors = {}
+    if (!documentType) nextErrors.documentType = 'Choose the type of ID you are uploading.'
+    if (!frontImage) nextErrors.front = 'Upload the front of your ID.'
+    if (!backImage) nextErrors.back = 'Upload the back of your ID.'
+    setErrors((current) => ({ ...current, ...nextErrors }))
+    return Object.keys(nextErrors).length === 0
+  }
+
+  function validateSelfie() {
+    if (selfie) return true
+    setErrors((current) => ({ ...current, selfie: 'Upload a clear selfie photo.' }))
+    return false
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    const hasDocuments = validateDocuments()
+    const hasSelfie = validateSelfie()
+    if (!hasDocuments) {
+      setStep(1)
       return
     }
-    if (file.size > MAX_FILE_SIZE) {
-      setSelfieError('Image must be less than 5MB.')
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (ev) => setSelfie({ file, preview: ev.target.result })
-    reader.readAsDataURL(file)
-    setSelfieError('')
-  }
-
-  function clearSelfie() {
-    setSelfie(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    const hasValidNin = validateNin()
-
-    if (!selfie) {
-      setSelfieError('Please upload a selfie photo')
+    if (!hasSelfie) {
       setStep(2)
+      return
     }
-    if (!hasValidNin || !selfie) return
 
     setLoading(true)
     try {
-      const selfieUrl = await uploadImage(selfie.file, 'kyc')
-      await submitKyc({ nin: idNumber, selfie_url: selfieUrl })
+      const [frontUrl, backUrl, selfieUrl] = await Promise.all([
+        uploadImage(frontImage.file, 'kyc'),
+        uploadImage(backImage.file, 'kyc'),
+        uploadImage(selfie.file, 'kyc'),
+      ])
+      await submitKyc({
+        id_document_type: documentType,
+        id_front_url: frontUrl,
+        id_back_url: backUrl,
+        selfie_url: selfieUrl,
+      })
       updateUser({ kyc_status: 'pending' })
       setSubmitted(true)
       showToast('KYC documents submitted successfully!', 'success')
@@ -223,7 +312,7 @@ export default function KycPage() {
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-2">Verification under review</h2>
             <p className="text-sm text-gray-500 dark:text-zinc-500 leading-relaxed">
-              Our team is reviewing your documents. This usually takes less than 24 hours.
+              Our team is reviewing your ID and selfie. This usually takes less than 24 hours.
             </p>
             <div className="mt-6 py-3 px-4 bg-gray-50 dark:bg-zinc-800/50 rounded-lg text-xs text-gray-500 dark:text-zinc-500">
               You cannot resubmit while your documents are under review.
@@ -236,7 +325,7 @@ export default function KycPage() {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-gray-50 dark:bg-zinc-950">
-      <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <PageHeader />
 
         <div className="mt-5 space-y-3">
@@ -247,113 +336,141 @@ export default function KycPage() {
 
         <form onSubmit={handleSubmit} className="mt-5">
           <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-5">
-            {step === 1 ? (
+            {step === 1 && (
               <>
-                <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Enter your NIN</h3>
+                <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Upload government ID</h3>
                 <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
-                  Your National Identification Number is used to verify your identity. Dial *346# to retrieve yours.
+                  Use a clear photo of the front and back of your NIN slip, national ID, voter's card, driver's license, or passport.
                 </p>
 
                 <div className="mt-4">
-                  <label htmlFor="nin" className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
-                    National Identification Number (NIN)
+                  <label htmlFor="documentType" className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
+                    ID type
                   </label>
-                  <input
-                    id="nin"
-                    type="text"
-                    inputMode="numeric"
-                    value={idNumber}
-                    onChange={handleIdNumberChange}
-                    placeholder="01234567890"
-                    maxLength={11}
-                    className={[
-                      'w-full h-10 px-3 text-sm rounded-lg border bg-white dark:bg-zinc-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-brand transition-colors',
-                      idError
-                        ? 'border-red-400 focus:border-red-500'
-                        : 'border-gray-200 dark:border-zinc-700 focus:border-brand',
-                    ].join(' ')}
+                  <select
+                    id="documentType"
+                    value={documentType}
+                    onChange={(event) => {
+                      setDocumentType(event.target.value)
+                      setErrors((current) => ({ ...current, documentType: '' }))
+                    }}
+                    className="w-full h-10 px-3 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand"
+                  >
+                    {DOCUMENT_TYPES.map((type) => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                  {errors.documentType && <p className="text-xs text-red-600 mt-1">{errors.documentType}</p>}
+                </div>
+
+                <div className="mt-4 grid sm:grid-cols-2 gap-3">
+                  <UploadBox
+                    title="Front of ID"
+                    hint="JPG or PNG, up to 5MB"
+                    value={frontImage}
+                    error={errors.front}
+                    inputRef={frontInputRef}
+                    onFile={handleImage('front', setFrontImage)}
+                    onClear={() => clearImage('front', setFrontImage, frontInputRef)}
                   />
-                  {idError && <p className="text-xs text-red-600 mt-1">{idError}</p>}
-                  <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1.5">11 digits, no spaces.</p>
+                  <UploadBox
+                    title="Back of ID"
+                    hint="JPG or PNG, up to 5MB"
+                    value={backImage}
+                    error={errors.back}
+                    inputRef={backInputRef}
+                    onFile={handleImage('back', setBackImage)}
+                    onClear={() => clearImage('back', setBackImage, backInputRef)}
+                  />
                 </div>
 
                 <button
                   type="button"
-                  onClick={goToSelfieStep}
+                  onClick={() => {
+                    if (validateDocuments()) setStep(2)
+                  }}
                   className="mt-4 w-full h-10 inline-flex items-center justify-center rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-700 transition-colors"
                 >
                   Continue
                 </button>
               </>
-            ) : (
+            )}
+
+            {step === 2 && (
               <>
-                <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Take a selfie</h3>
+                <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Upload selfie</h3>
                 <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
-                  We'll match this against your NIN photo. Make sure your face is well-lit and clearly visible.
+                  Upload a clear selfie so admin can compare your face with the ID document.
                 </p>
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-
-                {selfie ? (
-                  <div className="mt-4 flex flex-col items-center gap-4 rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/70 dark:bg-zinc-800/40 p-6">
-                    <div className="relative">
-                      <img
-                        src={selfie.preview}
-                        alt="Selfie preview"
-                        className="w-32 h-32 rounded-full object-cover border-4 border-orange-100 dark:border-orange-900/30"
-                      />
-                      <div className="absolute bottom-0 right-0 w-8 h-8 bg-brand rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900">
-                        <CheckCircle2 size={14} className="text-white" />
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{selfie.file.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-500">
-                        {(selfie.file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={clearSelfie}
-                      className="text-xs text-red-600 hover:text-red-700 transition-colors"
-                    >
-                      Remove photo
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className={[
-                      'mt-4 w-full aspect-[4/3] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors',
-                      selfieError
-                        ? 'border-red-300 bg-red-50 dark:bg-red-900/10'
-                        : 'border-gray-200 dark:border-zinc-700 hover:border-brand hover:bg-orange-50/30 dark:hover:bg-orange-950/10',
-                    ].join(' ')}
-                  >
-                    <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-500 dark:text-zinc-400">
-                      <Camera size={24} />
-                    </div>
-                    <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">Take or upload selfie</div>
-                    <div className="text-xs text-gray-400">JPG or PNG, up to 5MB</div>
-                    <div className="flex items-center gap-1.5 text-xs text-brand">
-                      <Upload size={12} />
-                      Choose file
-                    </div>
-                  </button>
-                )}
-                {selfieError && <p className="text-xs text-red-600 mt-2">{selfieError}</p>}
+                <div className="mt-4">
+                  <UploadBox
+                    title="Take or upload selfie"
+                    hint="Face clearly visible, JPG or PNG up to 5MB"
+                    value={selfie}
+                    error={errors.selfie}
+                    inputRef={selfieInputRef}
+                    onFile={handleImage('selfie', setSelfie)}
+                    onClear={() => clearImage('selfie', setSelfie, selfieInputRef)}
+                    round
+                  />
+                </div>
 
                 <div className="mt-4 flex gap-2">
                   <button
                     type="button"
                     onClick={() => setStep(1)}
+                    className="h-10 px-4 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-medium text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (validateSelfie()) setStep(3)
+                    }}
+                    className="h-10 flex-1 inline-flex items-center justify-center rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-700 transition-colors"
+                  >
+                    Review
+                  </button>
+                </div>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Review submission</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
+                  Make sure the ID photos are clear before sending them for admin review.
+                </p>
+
+                <div className="mt-4 grid gap-3">
+                  <div className="rounded-lg border border-gray-100 dark:border-zinc-800 p-3">
+                    <div className="text-xs text-gray-500 dark:text-zinc-500">ID type</div>
+                    <div className="mt-1 text-sm font-medium text-gray-900 dark:text-zinc-100">
+                      {DOCUMENT_TYPES.find((type) => type.value === documentType)?.label}
+                    </div>
+                  </div>
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    {[frontImage, backImage, selfie].map((image, index) => (
+                      <div key={image?.file?.name || index} className="rounded-lg border border-gray-100 dark:border-zinc-800 p-3">
+                        <img
+                          src={image?.preview}
+                          alt={['ID front', 'ID back', 'Selfie'][index]}
+                          className="w-full aspect-[4/3] object-cover rounded-lg bg-gray-100"
+                        />
+                        <div className="mt-2 text-xs font-medium text-gray-600 dark:text-zinc-400">
+                          {['Front of ID', 'Back of ID', 'Selfie'][index]}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
                     className="h-10 px-4 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-medium text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                   >
                     Back
