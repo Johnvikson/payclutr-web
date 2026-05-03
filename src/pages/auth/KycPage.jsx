@@ -258,13 +258,13 @@ export default function KycPage() {
         uploadImage(backImage.file, 'kyc'),
         uploadImage(selfie.file, 'kyc'),
       ])
-      await submitKyc({
+      const result = await submitKyc({
         id_document_type: documentType,
         id_front_url: frontUrl,
         id_back_url: backUrl,
         selfie_url: selfieUrl,
       })
-      updateUser({ kyc_status: 'pending' })
+      updateUser(result?.user ?? { kyc_status: 'pending', avatar_url: selfieUrl })
       setSubmitted(true)
       showToast('KYC documents submitted successfully!', 'success')
     } catch (err) {
