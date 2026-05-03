@@ -368,9 +368,6 @@ export default function ListingDetailPage() {
                                   <div className="text-sm font-medium text-gray-900 dark:text-zinc-100">{opt.label}</div>
                                   <div className="text-[11px] text-gray-500 dark:text-zinc-500">{opt.eta}</div>
                                 </div>
-                                <div className="text-right text-xs font-semibold text-gray-500 dark:text-zinc-400">
-                                  Paid outside escrow
-                                </div>
                               </label>
                             )
                           })}
