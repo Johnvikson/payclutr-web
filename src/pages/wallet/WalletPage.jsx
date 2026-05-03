@@ -13,7 +13,7 @@ import Button from '../../components/ui/Button.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import { Field, TextInput } from '../../components/ui/Field.jsx'
 import WithdrawalModal from '../../components/wallet/WithdrawalModal.jsx'
-import { EditProfileModal } from '../profile/ProfilePage.jsx'
+import EditProfileModal from '../../components/profile/EditProfileModal.jsx'
 
 const BASE_TABS = [
   { key: 'transactions', label: 'Transactions' },

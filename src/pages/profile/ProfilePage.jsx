@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { createElement, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -381,7 +381,10 @@ export function EditProfileModal({ profile, onClose }) {
 function LockedRow({ icon: Icon, text, verified }) {
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/40">
-      {Icon({ size: 14, className: verified ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-zinc-500' })}
+      {createElement(Icon, {
+        size: 14,
+        className: verified ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-zinc-500',
+      })}
       <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-zinc-300 truncate">{text || '—'}</span>
       <span
         className={`relative w-9 h-5 rounded-full ${verified ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-zinc-700'}`}
@@ -398,11 +401,11 @@ function LockedRow({ icon: Icon, text, verified }) {
 function VerificationBadge({ icon: Icon, label, verified }) {
   return verified ? (
     <Badge tone="verified">
-      {Icon({ size: 11 })} {label}
+      {createElement(Icon, { size: 11 })} {label}
     </Badge>
   ) : (
     <span className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full ring-1 ring-inset ring-gray-200 dark:ring-zinc-700 bg-gray-50 dark:bg-zinc-800/50 text-gray-400 dark:text-zinc-500">
-      {Icon({ size: 11 })} {label}
+      {createElement(Icon, { size: 11 })} {label}
     </span>
   )
 }
@@ -661,7 +664,7 @@ function EmptyTab({ icon: Icon, title, body }) {
     <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl">
       <div className="flex flex-col items-center justify-center text-center py-14 px-6">
         <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-300 dark:text-zinc-600 mb-3">
-          {Icon({ size: 22 })}
+          {createElement(Icon, { size: 22 })}
         </div>
         <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-1">{title}</h3>
         <p className="text-xs text-gray-500 dark:text-zinc-500 max-w-xs">{body}</p>
