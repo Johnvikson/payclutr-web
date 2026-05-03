@@ -349,11 +349,16 @@ export default function WalletPage() {
           </div>
 
           {isSeller && (
-            <div className="relative mt-5 max-w-md">
+            <div className="relative mt-5 grid grid-cols-2 gap-2 max-w-lg">
               <BalanceBreakdownCard
-                label="Sales Balance"
+                label="Deposit"
+                value={depositBalance}
+                body="Purchase-only"
+              />
+              <BalanceBreakdownCard
+                label="Sales"
                 value={salesBalance}
-                body="Earnings from sold products. Withdrawable by sellers."
+                body="Withdrawable"
               />
             </div>
           )}
@@ -453,10 +458,10 @@ function EmptyList({ title, body }) {
 
 function BalanceBreakdownCard({ label, value, body }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
       <div className="text-[10px] uppercase tracking-wider text-zinc-400">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-white">{formatNaira(value)}</div>
-      <p className="mt-1 text-[11px] leading-snug text-zinc-400">{body}</p>
+      <div className="mt-0.5 text-base font-semibold text-white">{formatNaira(value)}</div>
+      <p className="mt-0.5 text-[10px] leading-snug text-zinc-400">{body}</p>
     </div>
   )
 }
