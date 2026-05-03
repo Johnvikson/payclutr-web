@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowDownLeft, ArrowUpRight, Copy, CheckCircle2, Plus, Wallet as WalletIcon, Lock, ScanFace,
+  ArrowDownLeft, ArrowUpRight, Copy, CheckCircle2, Plus, Wallet as WalletIcon, Lock, UserCog,
 } from 'lucide-react'
 import { getWallet, getDepositAccount, setupDepositAccount } from '../../api/endpoints.js'
 import { useAuth } from '../../hooks/useAuth.js'
@@ -13,6 +13,7 @@ import Button from '../../components/ui/Button.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import { Field, TextInput } from '../../components/ui/Field.jsx'
 import WithdrawalModal from '../../components/wallet/WithdrawalModal.jsx'
+import { EditProfileModal } from '../profile/ProfilePage.jsx'
 
 const BASE_TABS = [
   { key: 'transactions', label: 'Transactions' },
@@ -266,6 +267,7 @@ export default function WalletPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('transactions')
   const [showWithdraw, setShowWithdraw] = useState(false)
+  const [showEditProfile, setShowEditProfile] = useState(false)
 
   // Scroll the deposit-account card into view without polluting the URL with a #hash
   // (the hash + scroll-mt would re-snap mobile scroll position when scrolling upward).
@@ -312,15 +314,16 @@ export default function WalletPage() {
                   <> · @{user.username || user.email.split('@')[0]}</>
                 )}
               </div>
-              <Link
-                to="/profile"
+              <button
+                type="button"
+                onClick={() => setShowEditProfile(true)}
                 aria-label="Edit profile"
                 title="Edit profile"
                 className="absolute bottom-0 right-0 group inline-flex h-7 w-7 items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-300/10 text-cyan-200 shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-all hover:border-cyan-200/70 hover:bg-cyan-300/20 hover:text-white hover:shadow-[0_0_24px_rgba(34,211,238,0.35)]"
               >
                 <span className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-300/20 via-transparent to-brand/30 opacity-70" />
-                <ScanFace size={14} className="relative" />
-              </Link>
+                <UserCog size={14} className="relative" />
+              </button>
             </div>
             <Logo size="sm" mono markOnly />
           </div>
@@ -399,6 +402,9 @@ export default function WalletPage() {
         balance={balance}
         user={user}
       />
+      {showEditProfile && user && (
+        <EditProfileModal profile={user} onClose={() => setShowEditProfile(false)} />
+      )}
     </div>
   )
 }
