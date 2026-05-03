@@ -144,7 +144,7 @@ export default function AdminListingsPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                {['Thumbnail', 'Title', 'Seller', 'Price', 'Condition', 'Category', 'Status', 'Date', 'Actions'].map((h) => (
+                {['Thumbnail', 'Title', 'Seller', 'Price', 'Condition', 'Receipt', 'Category', 'Status', 'Date', 'Actions'].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -153,7 +153,7 @@ export default function AdminListingsPage() {
               {isLoading && (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-gray-100">
-                    {Array.from({ length: 9 }).map((_, j) => (
+                    {Array.from({ length: 10 }).map((_, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className="h-4 bg-gray-100 rounded animate-pulse" />
                       </td>
@@ -170,7 +170,7 @@ export default function AdminListingsPage() {
                   <td className="px-4 py-3">
                     {listing.images?.[0] ? (
                       <img
-                        src={listing.images[0]}
+                        src={listing.images[0].image_url || listing.images[0]}
                         alt={listing.title}
                         className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0"
                       />
@@ -209,6 +209,26 @@ export default function AdminListingsPage() {
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                       {formatCondition(listing.condition)}
                     </span>
+                    <div className="mt-1 text-[11px] text-gray-500 max-w-[160px] line-clamp-2">
+                      Defects: {listing.defects || 'None'}
+                    </div>
+                  </td>
+
+                  <td className="px-4 py-3 text-xs whitespace-nowrap">
+                    {listing.receipt_url ? (
+                      <a
+                        href={listing.receipt_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-brand hover:underline"
+                      >
+                        View receipt
+                      </a>
+                    ) : (
+                      <span className={listing.category === 'Electronics' ? 'text-red-600 font-medium' : 'text-gray-400'}>
+                        Missing
+                      </span>
+                    )}
                   </td>
 
                   {/* Category */}
@@ -262,7 +282,7 @@ export default function AdminListingsPage() {
               ))}
               {!isLoading && pageListings.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colSpan={10} className="px-4 py-8 text-center text-sm text-gray-400">
                     No listings found
                   </td>
                 </tr>

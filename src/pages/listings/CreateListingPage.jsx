@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Camera, X, UploadCloud, AlertCircle, Truck, Package, Zap, MapPin, Film,
+  Camera, X, UploadCloud, AlertCircle, Truck, Package, Zap, MapPin, Film, ReceiptText,
 } from 'lucide-react'
 import { useToast } from '../../components/ui/Toast.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
@@ -59,8 +59,8 @@ const SHIP_METHODS = [
 ]
 
 const EMPTY_FORM = {
-  title: '', description: '', category: '', condition: '', price: '',
-  photos: [], video: null,
+  title: '', description: '', category: '', condition: '', defects: '', extra_features: '', price: '',
+  photos: [], video: null, receipt: null,
   shipping_park: false,
   shipping_gig: false, gig_confirmed: false,
   shipping_bolt_indrive: false, bolt_confirmed: false,
@@ -84,6 +84,7 @@ export default function CreateListingPage() {
   const { user } = useAuth()
   const fileInputRef = useRef(null)
   const videoInputRef = useRef(null)
+  const receiptInputRef = useRef(null)
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
@@ -122,6 +123,8 @@ export default function CreateListingPage() {
       description: existing.description || '',
       category:    existing.category || '',
       condition:   existing.condition || '',
+      defects:     existing.defects || '',
+      extra_features: existing.extra_features || '',
       price:       existing.price ? String(existing.price / 100) : '',
       shipping_park:         !!existing.shipping_park,
       shipping_gig:          !!existing.shipping_gig,
@@ -141,6 +144,9 @@ export default function CreateListingPage() {
       })),
       video: existing.video_url
         ? { existing: true, url: existing.video_url, preview: existing.video_url }
+        : null,
+      receipt: existing.receipt_url
+        ? { existing: true, url: existing.receipt_url, preview: existing.receipt_url, name: 'Uploaded receipt' }
         : null,
     }))
   }, [existing])
@@ -205,6 +211,27 @@ export default function CreateListingPage() {
     setForm((p) => ({ ...p, video: null }))
   }
 
+  const addReceipt = useCallback((file) => {
+    if (!file) return
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      setErrors((p) => ({ ...p, receipt: 'Upload an image or PDF receipt' }))
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((p) => ({ ...p, receipt: 'Receipt must be 5MB or smaller' }))
+      return
+    }
+    const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
+    setForm((p) => ({ ...p, receipt: { file, preview, name: file.name } }))
+    setErrors((p) => ({ ...p, receipt: '' }))
+  }, [])
+
+  const removeReceipt = () => {
+    if (form.receipt?.preview && !form.receipt.existing) URL.revokeObjectURL(form.receipt.preview)
+    setForm((p) => ({ ...p, receipt: null }))
+    if (receiptInputRef.current) receiptInputRef.current.value = ''
+  }
+
   // ── Validation ───────────────────────────────────────────────────────────
   const validate = () => {
     const e = {}
@@ -212,6 +239,7 @@ export default function CreateListingPage() {
     if (!form.description.trim()) e.description = 'Description is required'
     if (!form.category)           e.category    = 'Select a category'
     if (!form.condition)          e.condition   = 'Select a condition'
+    if (!form.defects.trim())     e.defects     = 'Enter product defects or type None'
     if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0) {
       e.price = 'Enter a valid price'
     }
@@ -247,12 +275,16 @@ export default function CreateListingPage() {
         })
       )
       const videoUrl = form.video.existing ? form.video.url : await uploadVideo(form.video.file)
-      const { photos: _photos, video: _video, ...rest } = form
+      const receiptUrl = form.receipt
+        ? (form.receipt.existing ? form.receipt.url : await uploadImage(form.receipt.file, 'listings'))
+        : null
+      const { photos: _photos, video: _video, receipt: _receipt, ...rest } = form
       const payload = {
         ...rest,
         price: Math.round(Number(form.price) * 100),
         images: uploadedImages,
         video_url: videoUrl,
+        receipt_url: receiptUrl,
       }
       const result = isEditing
         ? await updateListing(id, payload)
@@ -341,6 +373,25 @@ export default function CreateListingPage() {
                 </Field>
               </div>
 
+              <Field label="Defects" error={errors.defects}>
+                <TextArea
+                  rows={3}
+                  value={form.defects}
+                  onChange={(e) => set('defects', e.target.value)}
+                  placeholder="Type None if there are no defects. Otherwise describe scratches, repairs, battery issues, missing parts..."
+                  error={errors.defects}
+                />
+              </Field>
+
+              <Field label="Extra features" hint="Optional">
+                <TextArea
+                  rows={2}
+                  value={form.extra_features}
+                  onChange={(e) => set('extra_features', e.target.value)}
+                  placeholder="e.g. Comes with original box and charger"
+                />
+              </Field>
+
               <Field
                 label="Description"
                 error={errors.description}
@@ -371,6 +422,71 @@ export default function CreateListingPage() {
           </Card>
 
           {/* ── Photos ─────────────────────────────────────────────── */}
+          <Card>
+            <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Receipt</h3>
+            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1 mb-4">
+              Optional for most products. Expected for electronics, phones, and gadgets to help verify authenticity.
+            </p>
+
+            {form.receipt ? (
+              <div className="rounded-lg border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 p-3 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
+                  {form.receipt.preview ? (
+                    <img src={form.receipt.preview} alt="Receipt preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <ReceiptText size={20} className="text-gray-400" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">
+                    {form.receipt.name || 'Uploaded receipt'}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-zinc-500">
+                    {form.receipt.existing ? 'Already uploaded' : 'Ready to upload'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeReceipt}
+                  className="w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black/90"
+                  aria-label="Remove receipt"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => receiptInputRef.current?.click()}
+                className={`w-full h-28 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors ${
+                  errors.receipt
+                    ? 'border-red-300 dark:border-red-900'
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-brand hover:bg-orange-50/30 dark:hover:bg-orange-950/10'
+                } text-gray-500 dark:text-zinc-400`}
+              >
+                <ReceiptText size={22} />
+                <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                  Upload receipt
+                </div>
+                <div className="text-xs text-gray-400 dark:text-zinc-500">Image or PDF, max 5MB</div>
+              </button>
+            )}
+
+            <input
+              ref={receiptInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={(e) => addReceipt(e.target.files?.[0])}
+            />
+
+            {errors.receipt && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-red-600">
+                <AlertCircle size={14} /> {errors.receipt}
+              </div>
+            )}
+          </Card>
+
           <Card>
             <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Product video</h3>
             <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1 mb-4">

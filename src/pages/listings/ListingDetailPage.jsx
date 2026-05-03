@@ -242,6 +242,36 @@ export default function ListingDetailPage() {
               )}
             </div>
 
+            <div className="mt-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-5">
+              <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Condition notes</h3>
+              <div className="mt-3 grid gap-3">
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 dark:text-zinc-500 uppercase tracking-wide">Defects</div>
+                  <p className="mt-1 text-sm text-gray-700 dark:text-zinc-400 whitespace-pre-line">
+                    {listing.defects || 'None'}
+                  </p>
+                </div>
+                {listing.extra_features && (
+                  <div>
+                    <div className="text-xs font-semibold text-gray-500 dark:text-zinc-500 uppercase tracking-wide">Extra features</div>
+                    <p className="mt-1 text-sm text-gray-700 dark:text-zinc-400 whitespace-pre-line">
+                      {listing.extra_features}
+                    </p>
+                  </div>
+                )}
+                {listing.receipt_url && (
+                  <a
+                    href={listing.receipt_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex w-fit items-center rounded-lg border border-gray-200 dark:border-zinc-700 px-3 py-2 text-xs font-medium text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800"
+                  >
+                    View uploaded receipt
+                  </a>
+                )}
+              </div>
+            </div>
+
             {/* About the seller */}
             <div className="mt-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-5">
               <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200 mb-4">About the seller</h3>
