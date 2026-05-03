@@ -239,8 +239,10 @@ export function EditProfileModal({ profile, onClose }) {
             <Field label="Display name">
               <TextInput
                 value={form.display_name}
-                onChange={(e) => set('display_name', e.target.value)}
                 placeholder="e.g. Emeka Obi"
+                readOnly
+                aria-readonly="true"
+                title="Display name is read only"
                 required
               />
             </Field>
