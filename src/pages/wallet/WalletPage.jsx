@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowDownLeft, ArrowUpRight, Copy, CheckCircle2, Plus, Wallet as WalletIcon, Lock,
+  ArrowDownLeft, ArrowUpRight, Copy, CheckCircle2, Plus, Wallet as WalletIcon, Lock, ScanFace,
 } from 'lucide-react'
 import { getWallet, getDepositAccount, setupDepositAccount } from '../../api/endpoints.js'
 import { useAuth } from '../../hooks/useAuth.js'
@@ -301,7 +301,7 @@ export default function WalletPage() {
         <div className="mt-6 bg-zinc-900 dark:bg-zinc-800 text-white rounded-2xl p-6 relative overflow-hidden">
           <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-brand opacity-20 blur-3xl pointer-events-none" />
           <div className="relative flex items-start justify-between gap-3">
-            <div className="min-w-0">
+            <div className="relative min-w-0 pr-10">
               <div className="text-xs text-zinc-400 uppercase tracking-wider">Available balance</div>
               <div className="text-3xl sm:text-4xl font-bold mt-1.5 tracking-tight">
                 {isLoading ? '—' : formatNaira(balance)}
@@ -312,6 +312,15 @@ export default function WalletPage() {
                   <> · @{user.username || user.email.split('@')[0]}</>
                 )}
               </div>
+              <Link
+                to="/profile"
+                aria-label="Edit profile"
+                title="Edit profile"
+                className="absolute bottom-0 right-0 group inline-flex h-7 w-7 items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-300/10 text-cyan-200 shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-all hover:border-cyan-200/70 hover:bg-cyan-300/20 hover:text-white hover:shadow-[0_0_24px_rgba(34,211,238,0.35)]"
+              >
+                <span className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-300/20 via-transparent to-brand/30 opacity-70" />
+                <ScanFace size={14} className="relative" />
+              </Link>
             </div>
             <Logo size="sm" mono markOnly />
           </div>
