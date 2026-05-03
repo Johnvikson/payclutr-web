@@ -348,20 +348,20 @@ export default function WalletPage() {
             <Logo size="sm" mono markOnly />
           </div>
 
-          <div className={`relative mt-5 grid grid-cols-1 ${isSeller ? 'sm:grid-cols-2' : ''} gap-3`}>
-            <BalanceBreakdownCard
-              label="Deposit Balance"
-              value={depositBalance}
-              body="Top-ups and transfers. Purchase-only, not withdrawable."
-            />
-            {isSeller && (
+          {isSeller && (
+            <div className="relative mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <BalanceBreakdownCard
+                label="Deposit Balance"
+                value={depositBalance}
+                body="Top-ups and transfers. Purchase-only, not withdrawable."
+              />
               <BalanceBreakdownCard
                 label="Sales Balance"
                 value={salesBalance}
                 body="Earnings from sold products. Withdrawable by sellers."
               />
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="relative mt-5 flex flex-wrap gap-2">
             {isSeller && (
