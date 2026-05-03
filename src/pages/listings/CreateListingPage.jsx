@@ -185,7 +185,6 @@ export default function CreateListingPage() {
     const video = document.createElement('video')
     video.preload = 'metadata'
     video.onloadedmetadata = () => {
-      URL.revokeObjectURL(video.src)
       if (video.duration > 30.5) {
         URL.revokeObjectURL(preview)
         setErrors((p) => ({ ...p, video: 'Product video must be 30 seconds or less' }))
@@ -398,7 +397,14 @@ export default function CreateListingPage() {
               </button>
             ) : (
               <div className="relative rounded-lg overflow-hidden bg-black">
-                <video src={form.video.preview} controls className="w-full aspect-video object-contain" />
+                <video
+                  key={form.video.preview}
+                  src={form.video.preview}
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="w-full aspect-video object-contain"
+                />
                 <button
                   type="button"
                   onClick={removeVideo}

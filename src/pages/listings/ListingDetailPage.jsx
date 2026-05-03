@@ -23,6 +23,11 @@ const SHIPPING_OPTIONS = [
   { key: 'local_pickup', field: 'shipping_pickup',       icon: MapPin,  label: 'Local Pickup',   eta: 'Free',      fee: 0       },
 ]
 
+function videoPreviewUrl(url) {
+  if (!url) return ''
+  return url.includes('#') ? url : `${url}#t=0.1`
+}
+
 export default function ListingDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -141,8 +146,11 @@ export default function ListingDetailPage() {
                 <div className="border-t border-gray-100 dark:border-zinc-800 p-3">
                   <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-2">Product video</div>
                   <video
-                    src={listing.video_url}
+                    key={listing.video_url}
+                    src={videoPreviewUrl(listing.video_url)}
                     controls
+                    preload="metadata"
+                    playsInline
                     className="w-full rounded-lg bg-black aspect-video object-contain"
                   />
                 </div>
