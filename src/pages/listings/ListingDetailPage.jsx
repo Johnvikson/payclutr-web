@@ -30,7 +30,7 @@ const SHIPPING_OPTIONS = [
     field: 'shipping_gig',
     icon: Package,
     label: 'GIG Logistics',
-    eta: 'Fee confirmed by GIG',
+    eta: '2-4 days delivery',
     note: 'Seller drops off at GIG and shares the waybill amount. Buyer pays GIG directly, never the seller.',
   },
   {
