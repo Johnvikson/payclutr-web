@@ -162,7 +162,7 @@ function DepositAccount({ showSetup, onStartSetup }) {
             </p>
           </div>
           <Button type="button" onClick={onStartSetup} icon={Plus} className="shrink-0">
-            Top up
+            Create Account
           </Button>
         </div>
       </div>
