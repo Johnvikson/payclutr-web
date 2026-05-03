@@ -27,7 +27,7 @@ const PROTECTION_STEPS = [
   {
     Icon: Wallet,
     title: 'Buyer pays once',
-    body: 'The full item price and delivery fee are collected before contact details unlock.',
+    body: 'Only the item price is collected into escrow before contact details unlock.',
   },
   {
     Icon: Lock,
@@ -37,7 +37,7 @@ const PROTECTION_STEPS = [
   {
     Icon: MessageCircle,
     title: 'Chat stays on-platform',
-    body: 'Messages, shipping proof, and dispute evidence remain attached to the order.',
+    body: 'Delivery fees are agreed in chat and paid directly to the courier, never outside the order conversation.',
   },
   {
     Icon: BadgeCheck,

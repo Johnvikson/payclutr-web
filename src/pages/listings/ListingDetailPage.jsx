@@ -17,10 +17,38 @@ import { useAuth } from '../../hooks/useAuth.js'
 import { formatNaira, formatCondition, formatDate, formatTimeAgo } from '../../utils/formatters.js'
 
 const SHIPPING_OPTIONS = [
-  { key: 'park_waybill', field: 'shipping_park',         icon: Truck,   label: 'Park Waybill',   eta: '3–5 days',  fee: 250000  },
-  { key: 'gig',          field: 'shipping_gig',          icon: Package, label: 'GIG Logistics',  eta: '1–2 days',  fee: 450000  },
-  { key: 'bolt_indrive', field: 'shipping_bolt_indrive', icon: Zap,     label: 'Bolt / InDrive', eta: 'Same day',  fee: 320000  },
-  { key: 'local_pickup', field: 'shipping_pickup',       icon: MapPin,  label: 'Local Pickup',   eta: 'Free',      fee: 0       },
+  {
+    key: 'park_waybill',
+    field: 'shipping_park',
+    icon: Truck,
+    label: 'Park Waybill',
+    eta: 'Same day to 2 days',
+    note: 'Buyer and seller agree waybill details in chat. Buyer pays the delivery provider on receipt.',
+  },
+  {
+    key: 'gig',
+    field: 'shipping_gig',
+    icon: Package,
+    label: 'GIG Logistics',
+    eta: 'Fee confirmed by GIG',
+    note: 'Seller drops off at GIG and shares the waybill amount. Buyer pays GIG directly, never the seller.',
+  },
+  {
+    key: 'bolt_indrive',
+    field: 'shipping_bolt_indrive',
+    icon: Zap,
+    label: 'Bolt / InDrive',
+    eta: 'Same day delivery',
+    note: 'Buyer pays the Bolt or InDrive rider directly when the product is received.',
+  },
+  {
+    key: 'local_pickup',
+    field: 'shipping_pickup',
+    icon: MapPin,
+    label: 'Local Pickup',
+    eta: 'Free',
+    note: 'Buyer and seller agree a pickup point. OTP confirms handover.',
+  },
 ]
 
 function videoPreviewUrl(url) {
@@ -82,8 +110,7 @@ export default function ListingDetailPage() {
   const selectedShipping = enabledShipping.find((s) => s.key === shipping) || enabledShipping[0]
 
   const itemPrice = listing.price ?? 0
-  const shippingFee = selectedShipping?.fee ?? 0
-  const total = itemPrice + shippingFee
+  const total = itemPrice
 
   const balance = user?.wallet_balance ?? 0
   const sufficient = balance >= total
@@ -311,13 +338,25 @@ export default function ListingDetailPage() {
                                   <div className="text-sm font-medium text-gray-900 dark:text-zinc-100">{opt.label}</div>
                                   <div className="text-[11px] text-gray-500 dark:text-zinc-500">{opt.eta}</div>
                                 </div>
-                                <div className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                                  {opt.fee === 0 ? 'Free' : formatNaira(opt.fee)}
+                                <div className="text-right text-xs font-semibold text-gray-500 dark:text-zinc-400">
+                                  Paid outside escrow
                                 </div>
                               </label>
                             )
                           })}
                         </div>
+                        {selectedShipping && (
+                          <div
+                            className={[
+                              'mt-3 rounded-lg border px-3 py-2.5 text-xs leading-relaxed',
+                              selectedShipping.key === 'gig'
+                                ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300'
+                                : 'border-amber-100 bg-amber-50/70 text-amber-800 dark:border-amber-900/30 dark:bg-amber-950/10 dark:text-amber-300',
+                            ].join(' ')}
+                          >
+                            {selectedShipping.note}
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -327,14 +366,12 @@ export default function ListingDetailPage() {
                         <span>Item</span>
                         <span>{formatNaira(itemPrice)}</span>
                       </div>
-                      {selectedShipping && (
-                        <div className="flex justify-between text-gray-600 dark:text-zinc-400">
-                          <span>Shipping</span>
-                          <span>{shippingFee === 0 ? 'Free' : formatNaira(shippingFee)}</span>
-                        </div>
-                      )}
+                      <div className="flex justify-between text-gray-600 dark:text-zinc-400">
+                        <span>Delivery fee</span>
+                        <span>Paid directly to courier</span>
+                      </div>
                       <div className="flex justify-between font-bold text-gray-900 dark:text-zinc-100 pt-1.5 border-t border-gray-100 dark:border-zinc-800 mt-2">
-                        <span>Total</span>
+                        <span>Escrow total</span>
                         <span>{formatNaira(total)}</span>
                       </div>
                     </div>

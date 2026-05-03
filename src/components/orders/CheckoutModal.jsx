@@ -7,10 +7,10 @@ import { useAuth } from '../../hooks/useAuth.js'
 import { useToast } from '../ui/Toast.jsx'
 
 const SHIPPING_OPTIONS = [
-  { key: 'park_waybill',  field: 'shipping_park',         icon: Truck,   label: 'Park Waybill',   desc: 'Buyer pays driver on delivery' },
-  { key: 'gig',           field: 'shipping_gig',          icon: Package, label: 'GIG Logistics',  desc: 'Cost confirmed in chat' },
-  { key: 'bolt_indrive',  field: 'shipping_bolt_indrive', icon: Zap,     label: 'Bolt / InDrive', desc: 'Buyer books ride' },
-  { key: 'local_pickup',  field: 'shipping_pickup',       icon: MapPin,  label: 'Local Pickup',   desc: 'Free — OTP handover' },
+  { key: 'park_waybill',  field: 'shipping_park',         icon: Truck,   label: 'Park Waybill',   desc: 'Same day to 2 days. Pay delivery provider on receipt.' },
+  { key: 'gig',           field: 'shipping_gig',          icon: Package, label: 'GIG Logistics',  desc: 'Seller shares GIG waybill amount in chat.' },
+  { key: 'bolt_indrive',  field: 'shipping_bolt_indrive', icon: Zap,     label: 'Bolt / InDrive', desc: 'Same day. Buyer pays rider on receipt.' },
+  { key: 'local_pickup',  field: 'shipping_pickup',       icon: MapPin,  label: 'Local Pickup',   desc: 'Free OTP handover' },
 ]
 
 export default function CheckoutModal({ isOpen, onClose, listing }) {
@@ -89,40 +89,60 @@ export default function CheckoutModal({ isOpen, onClose, listing }) {
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Shipping Method</p>
               <div className="space-y-2">
-                {available.map(({ key, icon: Icon, label, desc }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSelectedShipping(key)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                      selectedShipping === key
-                        ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500/20'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                      selectedShipping === key ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-400'
-                    }`}>
-                      <Icon size={14} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-800">{label}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
-                    </div>
-                    {selectedShipping === key && <CheckCircle2 size={15} className="shrink-0 text-brand-500" />}
-                  </button>
-                ))}
+                {available.map(({ key, icon, label, desc }) => {
+                  const ShippingIcon = icon
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setSelectedShipping(key)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                        selectedShipping === key
+                          ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500/20'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        selectedShipping === key ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-400'
+                      }`}>
+                        <ShippingIcon size={14} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-800">{label}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                      </div>
+                      {selectedShipping === key && <CheckCircle2 size={15} className="shrink-0 text-brand-500" />}
+                    </button>
+                  )
+                })}
               </div>
             </div>
+
+            {selectedShipping === 'gig' && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
+                <p className="text-xs font-semibold text-red-700">Do not pay GIG fees to the seller.</p>
+                <p className="text-xs text-red-600 mt-1 leading-relaxed">
+                  The seller will drop off the item at GIG and share the official waybill amount in chat. Pay the delivery fee directly to GIG Logistics only.
+                </p>
+              </div>
+            )}
 
             {/* Summary */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Order Summary</p>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Item price held in escrow</span>
+                <span>{formatNaira(itemPrice)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Delivery fee</span>
+                <span>Paid outside PayClutr</span>
+              </div>
               <div className="border-t border-gray-200 pt-2 flex justify-between">
-                <span className="text-sm font-semibold text-gray-900">Total</span>
+                <span className="text-sm font-semibold text-gray-900">Escrow total</span>
                 <span className="text-sm font-bold text-brand-500">{formatNaira(itemPrice)}</span>
               </div>
-              <p className="text-[10px] text-gray-400">Shipping costs paid directly to carrier</p>
+              <p className="text-[10px] text-gray-400">Delivery costs are not included in the wallet payment.</p>
             </div>
 
             {/* CTA */}

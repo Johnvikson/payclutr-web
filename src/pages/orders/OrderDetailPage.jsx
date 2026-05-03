@@ -11,7 +11,7 @@ import {
   uploadDispatchProof, generateOtp, submitRating,
 } from '../../api/endpoints.js'
 import { useAuth } from '../../hooks/useAuth.js'
-import { formatNaira, formatDate, formatShipping, formatStatus } from '../../utils/formatters.js'
+import { formatNaira, formatDate, formatShipping } from '../../utils/formatters.js'
 import UserAvatar from '../../components/ui/UserAvatar.jsx'
 import StatusBadge from '../../components/ui/StatusBadge.jsx'
 import RaiseDisputeModal from '../../components/orders/RaiseDisputeModal.jsx'
@@ -25,6 +25,24 @@ const STEPS = [
   { key: 'done',         label: 'Completed' },
 ]
 
+const SHIPPING_PAYMENT_NOTES = {
+  park_waybill: {
+    tone: 'amber',
+    title: 'Park Waybill delivery fee is paid outside escrow',
+    body: 'Buyer and seller should agree waybill details in chat. The buyer pays the delivery provider when the item is received.',
+  },
+  gig: {
+    tone: 'red',
+    title: 'Do not pay GIG delivery fees to the seller',
+    body: 'The seller should drop the item at GIG Logistics and share the official waybill amount in chat. Buyer must pay the delivery fee directly to GIG Logistics only.',
+  },
+  bolt_indrive: {
+    tone: 'amber',
+    title: 'Bolt / InDrive fee is paid to the rider',
+    body: 'Buyer pays the Bolt or InDrive rider directly when the product is received. The fee is not part of PayClutr escrow.',
+  },
+}
+
 function statusToStep(status) {
   switch (status) {
     case 'awaiting_seller_confirmation': return 1
@@ -35,6 +53,30 @@ function statusToStep(status) {
     case 'disputed':                     return 3
     default:                             return 0
   }
+}
+
+function ShippingPaymentNotice({ method, compact = false }) {
+  const note = SHIPPING_PAYMENT_NOTES[method]
+  if (!note) return null
+  const isDanger = note.tone === 'red'
+
+  return (
+    <div
+      className={[
+        'flex items-start gap-2 rounded-xl border',
+        compact ? 'px-3 py-2' : 'p-4',
+        isDanger
+          ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300'
+          : 'border-amber-100 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300',
+      ].join(' ')}
+    >
+      <AlertTriangle size={compact ? 14 : 16} className="mt-0.5 shrink-0" />
+      <div>
+        <p className={compact ? 'text-xs font-semibold' : 'text-sm font-semibold'}>{note.title}</p>
+        <p className={compact ? 'text-xs mt-0.5 leading-relaxed' : 'text-sm mt-1 leading-relaxed'}>{note.body}</p>
+      </div>
+    </div>
+  )
 }
 
 function Stepper({ status }) {
@@ -79,6 +121,15 @@ function Stepper({ status }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function WaitBox({ message }) {
+  return (
+    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+      <Clock size={16} className="text-gray-400 mt-0.5 shrink-0" />
+      <p className="text-sm text-gray-600">{message}</p>
     </div>
   )
 }
@@ -134,7 +185,7 @@ function MessageBubble({ msg, isMe }) {
   )
 }
 
-function OrderChat({ orderId, userId, messages = [], isSending, onSend }) {
+function OrderChat({ userId, messages = [], isSending, onSend, shippingMethod }) {
   const [text, setText] = useState('')
   const fileRef = useRef(null)
   const bottomRef = useRef(null)
@@ -154,6 +205,9 @@ function OrderChat({ orderId, userId, messages = [], isSending, onSend }) {
       <div className="px-4 py-3 border-b border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50">
         <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Order Chat</p>
         <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">Messages stay on-platform for security</p>
+        <div className="mt-2">
+          <ShippingPaymentNotice method={shippingMethod} compact />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 h-[420px]">
@@ -198,7 +252,7 @@ function OrderChat({ orderId, userId, messages = [], isSending, onSend }) {
   )
 }
 
-function OtpModal({ isOpen, onClose, orderId }) {
+function OtpModal({ isOpen, onClose }) {
   const [otp] = useState(() => Math.floor(100000 + Math.random() * 900000).toString())
   const [copied, setCopied] = useState(false)
   const [timeLeft, setTimeLeft] = useState(15 * 60)
@@ -334,13 +388,6 @@ function ActionArea({ order, role, onRaiseDispute }) {
   const isBuyer  = role === 'buyer'
   const isSeller = role === 'seller'
 
-  const WaitBox = ({ message }) => (
-    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-      <Clock size={16} className="text-gray-400 mt-0.5 shrink-0" />
-      <p className="text-sm text-gray-600">{message}</p>
-    </div>
-  )
-
   if (status === 'awaiting_seller_confirmation') {
     if (isSeller) return (
       <div className="space-y-3">
@@ -392,7 +439,7 @@ function ActionArea({ order, role, onRaiseDispute }) {
           <LoadingButton onClick={isOtp ? () => genOtp.mutate() : () => fileRef.current?.click()} isLoading={isOtp ? genOtp.isPending : dispatch.isPending} className="btn-primary w-full">
             <BtnIcon size={15} /> {info.btn}
           </LoadingButton>
-          {isOtp && <OtpModal isOpen={showOtp} onClose={() => setShowOtp(false)} orderId={order.id} />}
+          {isOtp && <OtpModal isOpen={showOtp} onClose={() => setShowOtp(false)} />}
         </div>
       )
     }
@@ -406,6 +453,7 @@ function ActionArea({ order, role, onRaiseDispute }) {
           <p className="text-sm font-semibold text-blue-800 mb-1">Item is on the way</p>
           <p className="text-sm text-blue-700">Once you receive and inspect the item, confirm delivery to release payment. Funds release automatically in 72 hours if you don't act.</p>
         </div>
+        <ShippingPaymentNotice method={shipping_method} />
         <LoadingButton onClick={() => delivery.mutate()} isLoading={delivery.isPending} className="btn-primary w-full">
           <Check size={15} /> Confirm Delivery
         </LoadingButton>
@@ -583,12 +631,14 @@ export default function OrderDetailPage() {
             )}
           </div>
 
+          <ShippingPaymentNotice method={order.shipping_method} />
+
           {/* Escrow badge */}
           <div className="flex items-center gap-3 p-4 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-xl">
             <ShieldCheck size={20} className="text-brand shrink-0" />
             <div>
               <p className="text-sm font-semibold text-orange-900 dark:text-orange-200">Escrow Protection</p>
-              <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5">Payment is held safely until delivery is confirmed</p>
+              <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5">Only the item price is held. Delivery fees are paid directly to the carrier.</p>
             </div>
           </div>
 
@@ -614,11 +664,11 @@ export default function OrderDetailPage() {
 
         <div className="lg:col-span-2">
           <OrderChat
-            orderId={order.id}
             userId={user?.id}
             messages={messages}
             isSending={sendMsg.isPending}
             onSend={(text) => sendMsg.mutate(text)}
+            shippingMethod={order.shipping_method}
           />
         </div>
       </div>
