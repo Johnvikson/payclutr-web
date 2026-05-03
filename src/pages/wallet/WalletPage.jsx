@@ -349,7 +349,7 @@ export default function WalletPage() {
           </div>
 
           {isSeller && (
-            <div className="relative mt-5">
+            <div className="relative mt-5 max-w-md">
               <BalanceBreakdownCard
                 label="Sales Balance"
                 value={salesBalance}
