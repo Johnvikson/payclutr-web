@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowDownLeft, ArrowUpRight, Copy, CheckCircle2, Plus, Wallet as WalletIcon, Lock, UserCog,
@@ -284,20 +284,16 @@ function WithdrawalRow({ w }) {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function WalletPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('transactions')
   const [showWithdraw, setShowWithdraw] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
-  const [showDepositSetup, setShowDepositSetup] = useState(false)
 
   // Scroll the deposit-account card into view without polluting the URL with a #hash
   // (the hash + scroll-mt would re-snap mobile scroll position when scrolling upward).
   const scrollToDeposit = () => {
-    setShowDepositSetup(true)
-    document.getElementById('deposit-account')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
+    navigate('/wallet/virtual-account')
   }
 
   const { data: wallet, isLoading } = useQuery({
@@ -376,7 +372,7 @@ export default function WalletPage() {
 
         {/* ── Deposit account ─────────────────────────────────────────────── */}
         <div id="deposit-account" className="mt-5">
-          <DepositAccount showSetup={showDepositSetup} onStartSetup={scrollToDeposit} />
+          <DepositAccount showSetup={false} onStartSetup={scrollToDeposit} />
         </div>
 
         {/* ── Tabs ─────────────────────────────────────────────────────────── */}

@@ -27,6 +27,7 @@ import EscrowPage from './pages/orders/EscrowPage.jsx'
 import DisputeDetailPage from './pages/disputes/DisputeDetailPage.jsx'
 
 import WalletPage from './pages/wallet/WalletPage.jsx'
+import VirtualAccountPage from './pages/wallet/VirtualAccountPage.jsx'
 
 import ProfilePage from './pages/profile/ProfilePage.jsx'
 import NotificationsPage from './pages/profile/NotificationsPage.jsx'
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="/escrow"            element={<RequireAuth><EscrowPage /></RequireAuth>} />
           <Route path="/disputes/:id"      element={<RequireAuth><DisputeDetailPage /></RequireAuth>} />
           <Route path="/wallet"            element={<RequireAuth><WalletPage /></RequireAuth>} />
+          <Route path="/wallet/virtual-account" element={<RequireAuth><VirtualAccountPage /></RequireAuth>} />
           <Route path="/notifications"     element={<RequireAuth><NotificationsPage /></RequireAuth>} />
         </Route>
 
