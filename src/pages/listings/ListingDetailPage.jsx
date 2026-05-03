@@ -245,11 +245,13 @@ export default function ListingDetailPage() {
             <div className="mt-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-5">
               <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200">Condition notes</h3>
               <div className="mt-3 grid gap-3">
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 dark:text-zinc-500 uppercase tracking-wide">Defects</div>
-                  <p className="mt-1 text-sm text-gray-700 dark:text-zinc-400 whitespace-pre-line">
+                <div className="flex items-start gap-2 flex-wrap">
+                  <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/30 px-2.5 py-1 text-xs font-semibold text-red-700 dark:text-red-300">
+                    Defects
+                  </span>
+                  <span className="inline-flex max-w-full items-center rounded-full bg-gray-100 dark:bg-zinc-800 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-zinc-300 whitespace-pre-line">
                     {listing.defects || 'None'}
-                  </p>
+                  </span>
                 </div>
                 {listing.extra_features && (
                   <div>
