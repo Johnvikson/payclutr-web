@@ -302,8 +302,10 @@ export default function WalletPage() {
   })
 
   const balance      = wallet?.balance ?? user?.wallet_balance ?? 0
+  const salesBalance = wallet?.sales_balance ?? user?.sales_balance ?? 0
+  const depositBalance = wallet?.deposit_balance ?? Math.max(balance - salesBalance, 0)
   const isSeller     = user?.role === 'seller'
-  const canWithdraw  = isSeller && balance > 0 && user?.kyc_status === 'verified'
+  const canWithdraw  = isSeller && salesBalance > 0 && user?.kyc_status === 'verified'
   const transactions = wallet?.transactions || []
   const withdrawals  = wallet?.withdrawals  || []
   const tabs = isSeller ? BASE_TABS : BASE_TABS.filter((tab) => tab.key !== 'withdrawals')
@@ -322,7 +324,7 @@ export default function WalletPage() {
           <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-brand opacity-20 blur-3xl pointer-events-none" />
           <div className="relative flex items-start justify-between gap-3">
             <div className="relative min-w-0 pr-10">
-              <div className="text-xs text-zinc-400 uppercase tracking-wider">Available balance</div>
+              <div className="text-xs text-zinc-400 uppercase tracking-wider">Total balance</div>
               <div className="text-3xl sm:text-4xl font-bold mt-1.5 tracking-tight">
                 {isLoading ? '—' : formatNaira(balance)}
               </div>
@@ -344,6 +346,19 @@ export default function WalletPage() {
               </button>
             </div>
             <Logo size="sm" mono markOnly />
+          </div>
+
+          <div className="relative mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <BalanceBreakdownCard
+              label="Deposit Balance"
+              value={depositBalance}
+              body="Top-ups and transfers. Purchase-only, not withdrawable."
+            />
+            <BalanceBreakdownCard
+              label="Sales Balance"
+              value={salesBalance}
+              body="Earnings from sold products. Withdrawable by sellers."
+            />
           </div>
 
           <div className="relative mt-5 flex flex-wrap gap-2">
@@ -417,7 +432,7 @@ export default function WalletPage() {
       <WithdrawalModal
         isOpen={showWithdraw}
         onClose={() => setShowWithdraw(false)}
-        balance={balance}
+        balance={salesBalance}
         user={user}
       />
       {showEditProfile && user && (
@@ -435,6 +450,16 @@ function EmptyList({ title, body }) {
       </div>
       <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{title}</p>
       <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1 max-w-xs mx-auto">{body}</p>
+    </div>
+  )
+}
+
+function BalanceBreakdownCard({ label, value, body }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+      <div className="text-[10px] uppercase tracking-wider text-zinc-400">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-white">{formatNaira(value)}</div>
+      <p className="mt-1 text-[11px] leading-snug text-zinc-400">{body}</p>
     </div>
   )
 }

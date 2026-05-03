@@ -66,7 +66,7 @@ export default function WithdrawalModal({ isOpen, onClose, balance, user }) {
           {/* Step 1 — Amount */}
           {step === 1 && (
             <div className="space-y-4">
-              <p className="text-sm text-gray-500">Available: {formatNaira(balance)}</p>
+              <p className="text-sm text-gray-500">Sales balance available: {formatNaira(balance)}</p>
               <div>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-medium text-gray-500">₦</span>
@@ -82,7 +82,7 @@ export default function WithdrawalModal({ isOpen, onClose, balance, user }) {
                   <p className="text-xs text-red-500 mt-1.5">
                     {amountNaira < minNaira
                       ? `Minimum withdrawal is ₦${minNaira.toLocaleString()}`
-                      : `Cannot exceed your balance of ${formatNaira(balance)}`}
+                      : `Cannot exceed your sales balance of ${formatNaira(balance)}`}
                   </p>
                 )}
                 {amount && amountValid && (
