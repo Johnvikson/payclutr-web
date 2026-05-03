@@ -324,9 +324,9 @@ export default function WalletPage() {
           <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-brand opacity-20 blur-3xl pointer-events-none" />
           <div className="relative flex items-start justify-between gap-3">
             <div className="relative min-w-0 pr-10">
-              <div className="text-xs text-zinc-400 uppercase tracking-wider">Total balance</div>
+              <div className="text-xs text-zinc-400 uppercase tracking-wider">Deposit balance</div>
               <div className="text-3xl sm:text-4xl font-bold mt-1.5 tracking-tight">
-                {isLoading ? '—' : formatNaira(balance)}
+                {isLoading ? '—' : formatNaira(depositBalance)}
               </div>
               <div className="text-xs text-zinc-400 mt-2 truncate">
                 {user?.first_name} {user?.last_name}
@@ -349,12 +349,7 @@ export default function WalletPage() {
           </div>
 
           {isSeller && (
-            <div className="relative mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <BalanceBreakdownCard
-                label="Deposit Balance"
-                value={depositBalance}
-                body="Top-ups and transfers. Purchase-only, not withdrawable."
-              />
+            <div className="relative mt-5">
               <BalanceBreakdownCard
                 label="Sales Balance"
                 value={salesBalance}
