@@ -21,7 +21,7 @@ const BASE_TABS = [
 ]
 
 // ─── Deposit account block (3 states: empty / pending / active) ─────────────
-function DepositAccount() {
+function DepositAccount({ showSetup, onStartSetup }) {
   const { showToast } = useToast()
   const { user } = useAuth()
   const qc = useQueryClient()
@@ -149,6 +149,26 @@ function DepositAccount() {
   }
 
   // ── Empty state — BVN entry form ──────────────────────────────────────
+  if (!showSetup) {
+    return (
+      <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider font-semibold">
+              Fund Your Wallet
+            </div>
+            <p className="mt-1 text-sm text-gray-700 dark:text-zinc-300">
+              Create a dedicated virtual account when you are ready to top up.
+            </p>
+          </div>
+          <Button type="button" onClick={onStartSetup} icon={Plus} className="shrink-0">
+            Top up
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-5">
       <div className="text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider font-semibold">
@@ -268,10 +288,12 @@ export default function WalletPage() {
   const [activeTab, setActiveTab] = useState('transactions')
   const [showWithdraw, setShowWithdraw] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
+  const [showDepositSetup, setShowDepositSetup] = useState(false)
 
   // Scroll the deposit-account card into view without polluting the URL with a #hash
   // (the hash + scroll-mt would re-snap mobile scroll position when scrolling upward).
   const scrollToDeposit = () => {
+    setShowDepositSetup(true)
     document.getElementById('deposit-account')?.scrollIntoView({
       behavior: 'smooth',
       block: 'start',
@@ -354,7 +376,7 @@ export default function WalletPage() {
 
         {/* ── Deposit account ─────────────────────────────────────────────── */}
         <div id="deposit-account" className="mt-5">
-          <DepositAccount />
+          <DepositAccount showSetup={showDepositSetup} onStartSetup={scrollToDeposit} />
         </div>
 
         {/* ── Tabs ─────────────────────────────────────────────────────────── */}
