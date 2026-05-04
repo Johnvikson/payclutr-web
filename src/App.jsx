@@ -44,6 +44,8 @@ import AdminWithdrawalsPage from './pages/admin/AdminWithdrawalsPage.jsx'
 import AdminSettingsPage from './pages/admin/AdminSettingsPage.jsx'
 import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage.jsx'
 import AdminKYCPage from './pages/admin/AdminKYCPage.jsx'
+import AdminCMSPage from './pages/admin/AdminCMSPage.jsx'
+import AdminEmailTemplatesPage from './pages/admin/AdminEmailTemplatesPage.jsx'
 
 import NotFoundPage from './pages/NotFoundPage.jsx'
 
@@ -98,6 +100,8 @@ export default function App() {
           <Route path="/admin/disputes/:id" element={<AdminDisputeDetailPage />} />
           <Route path="/admin/withdrawals" element={<AdminWithdrawalsPage />} />
           <Route path="/admin/kyc" element={<AdminKYCPage />} />
+          <Route path="/admin/cms" element={<AdminCMSPage />} />
+          <Route path="/admin/emails" element={<AdminEmailTemplatesPage />} />
           <Route path="/admin/settings" element={<AdminSettingsPage />} />
           <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
         </Route>

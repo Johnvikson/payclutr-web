@@ -3,7 +3,7 @@ import { Outlet, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Tag, ShoppingBag,
   AlertTriangle, Wallet, Settings, BarChart2,
-  Shield, LogOut, Menu,
+  Shield, LogOut, Menu, FilePenLine, Mail,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
 
@@ -15,6 +15,8 @@ const adminNav = [
   { to: '/admin/disputes',    icon: AlertTriangle,   label: 'Disputes' },
   { to: '/admin/withdrawals', icon: Wallet,          label: 'Withdrawals' },
   { to: '/admin/kyc',         icon: Shield,          label: 'KYC Review' },
+  { to: '/admin/cms',         icon: FilePenLine,     label: 'CMS' },
+  { to: '/admin/emails',      icon: Mail,            label: 'Emails' },
   { to: '/admin/analytics',   icon: BarChart2,       label: 'Analytics' },
   { to: '/admin/settings',    icon: Settings,        label: 'Settings' },
 ]
