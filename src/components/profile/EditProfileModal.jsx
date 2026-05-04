@@ -72,13 +72,13 @@ export default function EditProfileModal({ profile, onClose }) {
   }
 
   async function handleSendPhoneOtp() {
-    if (!profile?.phone) {
-      showToast('Save your phone number first, then verify it.', 'error')
+    if (!form.phone) {
+      showToast('Add a phone number first.', 'error')
       return
     }
     setSendingPhoneOtp(true)
     try {
-      await sendPhoneOtp()
+      await sendPhoneOtp({ phone: form.phone })
       setPhoneOtpSent(true)
       showToast('Verification code sent to your phone.', 'success')
     } catch (err) {
@@ -95,7 +95,8 @@ export default function EditProfileModal({ profile, onClose }) {
     }
     setVerifyingPhoneOtp(true)
     try {
-      await verifyPhoneOtp(phoneOtp)
+      const result = await verifyPhoneOtp(phoneOtp)
+      if (result?.user) updateUser(result.user)
       setPhoneVerifiedLocal(true)
       setPhoneOtpSent(false)
       setPhoneOtp('')
@@ -238,7 +239,11 @@ export default function EditProfileModal({ profile, onClose }) {
               <TextInput
                 prefix="NG +234"
                 value={form.phone}
-                onChange={(e) => set('phone', e.target.value)}
+                onChange={(e) => {
+                  set('phone', e.target.value)
+                  setPhoneVerifiedLocal(false)
+                  setPhoneOtpSent(false)
+                }}
                 placeholder="801 234 5678"
               />
             </Field>
@@ -257,13 +262,13 @@ export default function EditProfileModal({ profile, onClose }) {
                 <div className="flex items-center gap-3 px-3 py-2.5">
                   <Phone size={14} className={phoneVerifiedLocal ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-zinc-500'} />
                   <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-zinc-300 truncate">
-                    {profile?.phone || 'Add a phone number above'}
+                    {form.phone || 'Add a phone number above'}
                   </span>
                   {phoneVerifiedLocal ? (
                     <span className="relative w-9 h-5 rounded-full bg-emerald-500" title="Verified">
                       <span className="absolute top-0.5 left-[18px] w-4 h-4 bg-white rounded-full shadow" />
                     </span>
-                  ) : profile?.phone ? (
+                  ) : form.phone ? (
                     <button
                       type="button"
                       onClick={handleSendPhoneOtp}
