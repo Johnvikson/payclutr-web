@@ -82,7 +82,7 @@ export default function EditProfileModal({ profile, onClose }) {
       setPhoneOtpSent(true)
       showToast('Verification code sent to your phone.', 'success')
     } catch (err) {
-      showToast(err?.detail ?? 'Could not send OTP.', 'error')
+      showToast(err?.detail ?? err?.message ?? 'Could not send OTP.', 'error')
     } finally {
       setSendingPhoneOtp(false)
     }
