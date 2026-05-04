@@ -41,6 +41,18 @@ client.interceptors.response.use(
       }
       return Promise.reject(enhanced)
     }
+    if (error.response) {
+      const status = error.response.status
+      const message = status >= 500
+        ? 'The server could not send the OTP right now. Please try again shortly.'
+        : error.message
+      return Promise.reject({
+        response: { data: body, status },
+        status,
+        message,
+        detail: message,
+      })
+    }
     return Promise.reject(error)
   }
 )
