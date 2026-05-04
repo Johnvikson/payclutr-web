@@ -299,6 +299,16 @@ export function EditProfileModal({ profile, onClose }) {
                 }}
                 placeholder="801 234 5678"
               />
+              {form.phone && !phoneVerifiedLocal && (
+                <button
+                  type="button"
+                  onClick={handleSendPhoneOtp}
+                  disabled={sendingPhoneOtp}
+                  className="mt-1.5 text-xs font-medium text-brand hover:underline disabled:opacity-60"
+                >
+                  {sendingPhoneOtp ? 'Sending OTP...' : phoneOtpSent ? 'Resend verification code' : 'Verify phone number'}
+                </button>
+              )}
             </Field>
           </div>
 

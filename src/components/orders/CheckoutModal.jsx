@@ -29,6 +29,12 @@ export default function CheckoutModal({ isOpen, onClose, listing }) {
 
   async function handleConfirm() {
     if (!selectedShipping) return
+    if (!user?.phone_verified) {
+      showToast('Verify your phone number before placing an order.', 'error')
+      onClose()
+      navigate(`/profile/${user?.id}`)
+      return
+    }
     if ((user?.wallet_balance ?? 0) < itemPrice) {
       showToast('Insufficient wallet balance. Please fund your wallet to continue.', 'error')
       onClose()
